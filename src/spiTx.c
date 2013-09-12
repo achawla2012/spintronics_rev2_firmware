@@ -12,6 +12,7 @@
 
 #include "p33exxxx.h"
 #include "spintronics.h"
+#include "spiTx.h"
 
 #define CS1 PORTBbits.RB0
 #define CS2 PORTBbits.RB1
@@ -19,16 +20,11 @@
 #define ALL_CS_MASK = 0x0007
 
 #define SPI_TX_BUF_SIZE 32
+
 /*
  * top four bits of each SPI_TX_BUF 16-bit word are the address
- * 0x1xxx corresponds to CS1 (board designator U20)
- * 0x2xxx corresponds to CS2 (board designator U23)
- * 0x3xxx corresponds to CS3 (board designator U24)
  */
 #define SPI_TX_ADDR_MASK 0xF000
-#define SPI_ADDR_1 0x1000
-#define SPI_ADDR_2 0x2000
-#define SPI_ADDR_3 0x3000
 /*
  * nextfour bits are the size of the payload
  * values of 1-8 are valid (up to 8 bytes
@@ -136,17 +132,17 @@ static void spiTxWorker(void)
         
         if (numBytes <= 8)
         {
-            addr = (spiTxBuf[spiTxCur] && SPI_TX_ADDR_MASK);
+            addr = (spiTxBuf[spiTxCur] && SPI_TX_ADDR_MASK) >> 12;
             
             switch (addr)
             {
-                case SPI_ADDR_1:
+                case U20:
                     CS1 = 0;
                     break;
-                case SPI_ADDR_2:
+                case U23:
                     CS2 = 0;
                     break;
-                case SPI_ADDR_3:
+                case U24:
                     CS3 = 0;
                     break;
                 default:
@@ -173,7 +169,7 @@ static void spiTxWorker(void)
     DISICNT = 0;//end critical section
 }
 
-void spiTx(uint8_t addr, uint8_t numBytes, uint8_t *pl)
+void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
 {
     bool spawnTxThread = false;
     uint8_t bufSpaceAvl, header, i;

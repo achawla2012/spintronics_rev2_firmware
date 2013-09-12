@@ -32,6 +32,7 @@ Command:
   build/default/production/_ext/1360937237/traps.o \
   build/default/production/_ext/1360937237/uartDrv.o \
   build/default/production/_ext/1360937237/spiTx.o \
+  build/default/production/_ext/1360937237/digiPotDrv.o \
   ..\a\libq-coff.a \
   ..\a\libq-elf.a \
   --defsym=__MPLAB_BUILD=1 \
@@ -129,11 +130,11 @@ section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
 .text                        0x200               0x75c           0xb0a  (2826)
 .prog                        0x95c              0x7ffe          0xbffd  (49149)
-.text                       0x895a              0x2476          0x36b1  (14001)
-.dinit                      0xadd0                0x1a            0x27  (39)
-.text                       0xadea                0x24            0x36  (54)
+.text                       0x895a              0x257a          0x3837  (14391)
+.dinit                      0xaed4                0x1a            0x27  (39)
+.text                       0xaeee                0x24            0x36  (54)
 
-                     Total program memory used (bytes):        0x10215  (66069) 12%
+                     Total program memory used (bytes):        0x1039b  (66459) 12%
 
 
 Auxflash Memory  [Origin = 0x7fc000, Length = 0x3ff8]
@@ -209,16 +210,16 @@ External Symbols in Program Memory (by address):
                   0x0002ea                  _clock
                   0x000312                  ___floatdisf
                   0x000332                  _atan2f
-                  0x00036c                  ___gtsf2
                   0x00036c                  ___gesf2
+                  0x00036c                  ___gtsf2
                   0x000370                  _cosf
                   0x000374                  ___mulsf3
                   0x0003dc                  ___floatunsisf
                   0x0003e0                  ___divsf3
                   0x000464                  _sinf
+                  0x000468                  ___lesf2
                   0x000468                  ___ltsf2
                   0x000468                  ___eqsf2
-                  0x000468                  ___lesf2
                   0x00046c                  ___subsf3
                   0x00046e                  ___addsf3
                   0x000528                  ___fixsfsi
@@ -255,30 +256,34 @@ External Symbols in Program Memory (by address):
                   0x00a55e                  _measure
                   0x00a784                  _spiInit
                   0x00a80a                  __SPI1Interrupt
-                  0x00a8de                  _spiTx
-                  0x00a99e                  __Q15cosPILUT
-                  0x00aaa0                  __Q15sinPILUT
-                  0x00aba6                  _i2sInit
-                  0x00ac42                  __DCIInterrupt
-                  0x00ac60                  _muxInit
-                  0x00ac8a                  _configSensor
-                  0x00acf6                  _busy_wait_ms
-                  0x00ad6c                  _main
-                  0x00adea                  _cs4272Init
-                  0x00ae02                  _asm16X16Mult
+                  0x00a8c8                  _spiTx
+                  0x00a9b4                  __Q15cosPILUT
+                  0x00aab6                  __Q15sinPILUT
+                  0x00abbc                  _setRBridge
+                  0x00ac06                  _setRAmp
+                  0x00ac24                  _getRBridgeOhms
+                  0x00ac80                  _getRAmpOhms
+                  0x00acaa                  _i2sInit
+                  0x00ad46                  __DCIInterrupt
+                  0x00ad64                  _muxInit
+                  0x00ad8e                  _configSensor
+                  0x00adfa                  _busy_wait_ms
+                  0x00ae70                  _main
+                  0x00aeee                  _cs4272Init
+                  0x00af06                  _asm16X16Mult
 
 External Symbols in Program Memory (by name):
 
                   0x0002ce                  __AddressError
-                  0x00ac42                  __DCIInterrupt
+                  0x00ad46                  __DCIInterrupt
                   0x0002e0                  __DMACError
                   0x0002e6                  __DefaultInterrupt
                   0x0002da                  __MathError
                   0x0002c8                  __OscillatorFail
                   0x000952                  __Q15abs
-                  0x00a99e                  __Q15cosPILUT
+                  0x00a9b4                  __Q15cosPILUT
                   0x00091e                  __Q15ftoi
-                  0x00aaa0                  __Q15sinPILUT
+                  0x00aab6                  __Q15sinPILUT
                   0x00a80a                  __SPI1Interrupt
                   0x0002d4                  __StackError
                   0x008ea8                  __U1RXInterrupt
@@ -314,27 +319,31 @@ External Symbols in Program Memory (by name):
                   0x000222                  __psv_init
                   0x000200                  __resetPRI
                   0x000734                  __sincosf
-                  0x00ae02                  _asm16X16Mult
+                  0x00af06                  _asm16X16Mult
                   0x000332                  _atan2f
                   0x000634                  _atanf
-                  0x00acf6                  _busy_wait_ms
+                  0x00adfa                  _busy_wait_ms
                   0x0002ea                  _clock
-                  0x00ac8a                  _configSensor
+                  0x00ad8e                  _configSensor
                   0x00095c                  _cosLUT_ZeroToPiByTwo
                   0x000370                  _cosf
-                  0x00adea                  _cs4272Init
+                  0x00aeee                  _cs4272Init
                   0x00087c                  _fmodf
-                  0x00aba6                  _i2sInit
-                  0x00ad6c                  _main
+                  0x00ac80                  _getRAmpOhms
+                  0x00ac24                  _getRBridgeOhms
+                  0x00acaa                  _i2sInit
+                  0x00ae70                  _main
                   0x00a55e                  _measure
-                  0x00ac60                  _muxInit
+                  0x00ad64                  _muxInit
                   0x00895a                  _processStartCommand
                   0x00a1e2                  _readBridgeSampleAndApplyGain
+                  0x00ac06                  _setRAmp
+                  0x00abbc                  _setRBridge
                   0x00a2f0                  _shiftRegister
                   0x00a350                  _signalGenerator
                   0x000464                  _sinf
                   0x00a784                  _spiInit
-                  0x00a8de                  _spiTx
+                  0x00a8c8                  _spiTx
                   0x009b3c                  _spintronicsStateMachine
                   0x0094b0                  _transmitError
                   0x009070                  _transmitResults
@@ -371,6 +380,7 @@ LOAD build/default/production/_ext/1360937237/muxControl.o
 LOAD build/default/production/_ext/1360937237/traps.o
 LOAD build/default/production/_ext/1360937237/uartDrv.o
 LOAD build/default/production/_ext/1360937237/spiTx.o
+LOAD build/default/production/_ext/1360937237/digiPotDrv.o
 LOAD ..\a\libq-coff.a
 LOAD ..\a\libq-elf.a
                     0x0001                  __MPLAB_BUILD = 0x1
@@ -623,7 +633,7 @@ __FUID0
                   0x000086          0x4 LONG 0x2e6 DEFINED (__Interrupt57)?ABSOLUTE (__Interrupt57):ABSOLUTE (__DefaultInterrupt)
                   0x000088          0x4 LONG 0x2e6 DEFINED (__Interrupt58)?ABSOLUTE (__Interrupt58):ABSOLUTE (__DefaultInterrupt)
                   0x00008a          0x4 LONG 0x2e6 DEFINED (__DCIEInterrupt)?ABSOLUTE (__DCIEInterrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00008c          0x4 LONG 0xac42 DEFINED (__DCIInterrupt)?ABSOLUTE (__DCIInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00008c          0x4 LONG 0xad46 DEFINED (__DCIInterrupt)?ABSOLUTE (__DCIInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00008e          0x4 LONG 0x2e6 DEFINED (__DMA5Interrupt)?ABSOLUTE (__DMA5Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000090          0x4 LONG 0x2e6 DEFINED (__RTCCInterrupt)?ABSOLUTE (__RTCCInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000092          0x4 LONG 0x2e6 DEFINED (__Interrupt63)?ABSOLUTE (__Interrupt63):ABSOLUTE (__DefaultInterrupt)
@@ -2865,7 +2875,7 @@ LOAD data_init
 LOAD default_isr
 
 __c30_signature
-                  0x000000         0xf6
+                  0x000000         0xfc
  __c30_signature
                   0x000000          0x6 build/default/production/_ext/1360937237/cosLUT.o
  __c30_signature
@@ -2887,67 +2897,69 @@ __c30_signature
  __c30_signature
                   0x000036          0x6 build/default/production/_ext/1360937237/spiTx.o
  __c30_signature
-                  0x00003c          0x6 ..\a\libq-coff.a(PIC_Ftoi_1_15.epo)
+                  0x00003c          0x6 build/default/production/_ext/1360937237/digiPotDrv.o
  __c30_signature
-                  0x000042          0x6 ..\a\libq-coff.a(PIC_Itof_1_15.epo)
+                  0x000042          0x6 ..\a\libq-coff.a(PIC_Ftoi_1_15.epo)
  __c30_signature
-                  0x000048          0x6 ..\a\libq-coff.a(PIC_Abs_1_15.epo)
+                  0x000048          0x6 ..\a\libq-coff.a(PIC_Itof_1_15.epo)
  __c30_signature
-                  0x00004e          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(crt0_extendedep.o)
+                  0x00004e          0x6 ..\a\libq-coff.a(PIC_Abs_1_15.epo)
  __c30_signature
-                  0x000054          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(data_init_extendedep.o)
+                  0x000054          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(crt0_extendedep.o)
  __c30_signature
-                  0x00005a          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatdisf.epo)
+                  0x00005a          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(data_init_extendedep.o)
  __c30_signature
-                  0x000060          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atan2f.epo)
+                  0x000060          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatdisf.epo)
  __c30_signature
-                  0x000066          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fgtge.epo)
+                  0x000066          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atan2f.epo)
  __c30_signature
-                  0x00006c          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(cosf.epo)
+                  0x00006c          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fgtge.epo)
  __c30_signature
-                  0x000072          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsf3.epo)
+                  0x000072          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(cosf.epo)
  __c30_signature
-                  0x000078          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatunsisf.epo)
+                  0x000078          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsf3.epo)
  __c30_signature
-                  0x00007e          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsf3.epo)
+                  0x00007e          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatunsisf.epo)
  __c30_signature
-                  0x000084          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sinf.epo)
+                  0x000084          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsf3.epo)
  __c30_signature
-                  0x00008a          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(feqltle.epo)
+                  0x00008a          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sinf.epo)
  __c30_signature
-                  0x000090          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(addsf3.epo)
+                  0x000090          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(feqltle.epo)
  __c30_signature
-                  0x000096          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixsfsi.epo)
+                  0x000096          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(addsf3.epo)
  __c30_signature
-                  0x00009c          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatsisf.epo)
+                  0x00009c          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixsfsi.epo)
  __c30_signature
-                  0x0000a2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixunssfsi.epo)
+                  0x0000a2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatsisf.epo)
  __c30_signature
-                  0x0000a8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
+                  0x0000a8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixunssfsi.epo)
  __c30_signature
-                  0x0000ae          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
+                  0x0000ae          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
  __c30_signature
-                  0x0000b4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
+                  0x0000b4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
  __c30_signature
-                  0x0000ba          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
+                  0x0000ba          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
  __c30_signature
-                  0x0000c0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
+                  0x0000c0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
  __c30_signature
-                  0x0000c6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
+                  0x0000c6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
  __c30_signature
-                  0x0000cc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
+                  0x0000cc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
  __c30_signature
-                  0x0000d2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
+                  0x0000d2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
  __c30_signature
-                  0x0000d8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
+                  0x0000d8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
  __c30_signature
-                  0x0000de          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
+                  0x0000de          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
  __c30_signature
-                  0x0000e4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
+                  0x0000e4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
  __c30_signature
-                  0x0000ea          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(clock.EPo)
+                  0x0000ea          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
  __c30_signature
-                  0x0000f0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(timeep.Lo)
+                  0x0000f0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(clock.EPo)
+ __c30_signature
+                  0x0000f6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(timeep.Lo)
 
 .nbss               0x1050        0xe52
  .nbss              0x1050        0xd3a build/default/production/_ext/1360937237/uartDrv.o
@@ -2972,7 +2984,7 @@ __c30_signature
  .prog            0x00095c       0x7ffe build/default/production/_ext/1360937237/cosLUT.o
                   0x00095c                  cosLUT_ZeroToPiByTwo
 
-.text             0x00895a       0x2476
+.text             0x00895a       0x257a
  .text            0x00895a       0x11e2 build/default/production/_ext/1360937237/uartDrv.o
                   0x00895a                  processStartCommand
                   0x008d66                  uart_Init
@@ -2988,29 +3000,34 @@ __c30_signature
                   0x00a2f0                  shiftRegister
                   0x00a350                  signalGenerator
                   0x00a55e                  measure
- .text            0x00a784        0x21a build/default/production/_ext/1360937237/spiTx.o
+ .text            0x00a784        0x230 build/default/production/_ext/1360937237/spiTx.o
                   0x00a784                  spiInit
                   0x00a80a                  _SPI1Interrupt
-                  0x00a8de                  spiTx
- .text            0x00a99e        0x208 build/default/production/_ext/1360937237/cosLUT.o
-                  0x00a99e                  _Q15cosPILUT
-                  0x00aaa0                  _Q15sinPILUT
- .text            0x00aba6         0xba build/default/production/_ext/1360937237/i2sDrv.o
-                  0x00aba6                  i2sInit
-                  0x00ac42                  _DCIInterrupt
- .text            0x00ac60         0x96 build/default/production/_ext/1360937237/muxControl.o
-                  0x00ac60                  muxInit
-                  0x00ac8a                  configSensor
- .text            0x00acf6         0x76 build/default/production/_ext/1360937237/delay.o
-                  0x00acf6                  busy_wait_ms
- .text            0x00ad6c         0x64 build/default/production/_ext/1360937237/main.o
-                  0x00ad6c                  main
+                  0x00a8c8                  spiTx
+ .text            0x00a9b4        0x208 build/default/production/_ext/1360937237/cosLUT.o
+                  0x00a9b4                  _Q15cosPILUT
+                  0x00aab6                  _Q15sinPILUT
+ .text            0x00abbc         0xee build/default/production/_ext/1360937237/digiPotDrv.o
+                  0x00abbc                  setRBridge
+                  0x00ac06                  setRAmp
+                  0x00ac24                  getRBridgeOhms
+                  0x00ac80                  getRAmpOhms
+ .text            0x00acaa         0xba build/default/production/_ext/1360937237/i2sDrv.o
+                  0x00acaa                  i2sInit
+                  0x00ad46                  _DCIInterrupt
+ .text            0x00ad64         0x96 build/default/production/_ext/1360937237/muxControl.o
+                  0x00ad64                  muxInit
+                  0x00ad8e                  configSensor
+ .text            0x00adfa         0x76 build/default/production/_ext/1360937237/delay.o
+                  0x00adfa                  busy_wait_ms
+ .text            0x00ae70         0x64 build/default/production/_ext/1360937237/main.o
+                  0x00ae70                  main
 
-.dinit            0x00add0         0x1a
- .dinit           0x00add0         0x1a data_init
+.dinit            0x00aed4         0x1a
+ .dinit           0x00aed4         0x1a data_init
 
-.text             0x00adea         0x24
- .text            0x00adea         0x18 build/default/production/_ext/1360937237/CS4272config.o
-                  0x00adea                  cs4272Init
- .text            0x00ae02          0xc build/default/production/_ext/1360937237/asm.o
-                  0x00ae02                  asm16X16Mult
+.text             0x00aeee         0x24
+ .text            0x00aeee         0x18 build/default/production/_ext/1360937237/CS4272config.o
+                  0x00aeee                  cs4272Init
+ .text            0x00af06          0xc build/default/production/_ext/1360937237/asm.o
+                  0x00af06                  asm16X16Mult

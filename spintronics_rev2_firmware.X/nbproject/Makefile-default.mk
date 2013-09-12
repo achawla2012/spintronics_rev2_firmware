@@ -45,11 +45,11 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1360937237/asm.o ${OBJECTDIR}/_ext/1360937237/cosLUT.o ${OBJECTDIR}/_ext/1360937237/CS4272config.o ${OBJECTDIR}/_ext/1360937237/delay.o ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o ${OBJECTDIR}/_ext/1360937237/i2sDrv.o ${OBJECTDIR}/_ext/1360937237/main.o ${OBJECTDIR}/_ext/1360937237/muxControl.o ${OBJECTDIR}/_ext/1360937237/traps.o ${OBJECTDIR}/_ext/1360937237/uartDrv.o ${OBJECTDIR}/_ext/1360937237/spiTx.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1360937237/asm.o.d ${OBJECTDIR}/_ext/1360937237/cosLUT.o.d ${OBJECTDIR}/_ext/1360937237/CS4272config.o.d ${OBJECTDIR}/_ext/1360937237/delay.o.d ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o.d ${OBJECTDIR}/_ext/1360937237/i2sDrv.o.d ${OBJECTDIR}/_ext/1360937237/main.o.d ${OBJECTDIR}/_ext/1360937237/muxControl.o.d ${OBJECTDIR}/_ext/1360937237/traps.o.d ${OBJECTDIR}/_ext/1360937237/uartDrv.o.d ${OBJECTDIR}/_ext/1360937237/spiTx.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1360937237/asm.o ${OBJECTDIR}/_ext/1360937237/cosLUT.o ${OBJECTDIR}/_ext/1360937237/CS4272config.o ${OBJECTDIR}/_ext/1360937237/delay.o ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o ${OBJECTDIR}/_ext/1360937237/i2sDrv.o ${OBJECTDIR}/_ext/1360937237/main.o ${OBJECTDIR}/_ext/1360937237/muxControl.o ${OBJECTDIR}/_ext/1360937237/traps.o ${OBJECTDIR}/_ext/1360937237/uartDrv.o ${OBJECTDIR}/_ext/1360937237/spiTx.o ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1360937237/asm.o.d ${OBJECTDIR}/_ext/1360937237/cosLUT.o.d ${OBJECTDIR}/_ext/1360937237/CS4272config.o.d ${OBJECTDIR}/_ext/1360937237/delay.o.d ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o.d ${OBJECTDIR}/_ext/1360937237/i2sDrv.o.d ${OBJECTDIR}/_ext/1360937237/main.o.d ${OBJECTDIR}/_ext/1360937237/muxControl.o.d ${OBJECTDIR}/_ext/1360937237/traps.o.d ${OBJECTDIR}/_ext/1360937237/uartDrv.o.d ${OBJECTDIR}/_ext/1360937237/spiTx.o.d ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/1360937237/asm.o ${OBJECTDIR}/_ext/1360937237/cosLUT.o ${OBJECTDIR}/_ext/1360937237/CS4272config.o ${OBJECTDIR}/_ext/1360937237/delay.o ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o ${OBJECTDIR}/_ext/1360937237/i2sDrv.o ${OBJECTDIR}/_ext/1360937237/main.o ${OBJECTDIR}/_ext/1360937237/muxControl.o ${OBJECTDIR}/_ext/1360937237/traps.o ${OBJECTDIR}/_ext/1360937237/uartDrv.o ${OBJECTDIR}/_ext/1360937237/spiTx.o
+OBJECTFILES=${OBJECTDIR}/_ext/1360937237/asm.o ${OBJECTDIR}/_ext/1360937237/cosLUT.o ${OBJECTDIR}/_ext/1360937237/CS4272config.o ${OBJECTDIR}/_ext/1360937237/delay.o ${OBJECTDIR}/_ext/1360937237/generateAndProcessSamples.o ${OBJECTDIR}/_ext/1360937237/i2sDrv.o ${OBJECTDIR}/_ext/1360937237/main.o ${OBJECTDIR}/_ext/1360937237/muxControl.o ${OBJECTDIR}/_ext/1360937237/traps.o ${OBJECTDIR}/_ext/1360937237/uartDrv.o ${OBJECTDIR}/_ext/1360937237/spiTx.o ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o
 
 
 CFLAGS=
@@ -133,6 +133,12 @@ ${OBJECTDIR}/_ext/1360937237/spiTx.o: ../src/spiTx.c  nbproject/Makefile-${CND_C
 	${MP_CC} $(MP_EXTRA_CC_PRE)  ../src/spiTx.c  -o ${OBJECTDIR}/_ext/1360937237/spiTx.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1360937237/spiTx.o.d"        -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -omf=coff -legacy-libc -O0 -I"../../h" -I"../h" -msmart-io=1 -msfr-warn=off
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/spiTx.o.d" $(SILENT)  -rsi ${MP_CC_DIR}../ 
 	
+${OBJECTDIR}/_ext/1360937237/digiPotDrv.o: ../src/digiPotDrv.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/_ext/1360937237 
+	@${RM} ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  ../src/digiPotDrv.c  -o ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d"        -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -omf=coff -legacy-libc -O0 -I"../../h" -I"../h" -msmart-io=1 -msfr-warn=off
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d" $(SILENT)  -rsi ${MP_CC_DIR}../ 
+	
 else
 ${OBJECTDIR}/_ext/1360937237/cosLUT.o: ../src/cosLUT.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/_ext/1360937237 
@@ -193,6 +199,12 @@ ${OBJECTDIR}/_ext/1360937237/spiTx.o: ../src/spiTx.c  nbproject/Makefile-${CND_C
 	@${RM} ${OBJECTDIR}/_ext/1360937237/spiTx.o.d 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  ../src/spiTx.c  -o ${OBJECTDIR}/_ext/1360937237/spiTx.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1360937237/spiTx.o.d"        -g -omf=coff -legacy-libc -O0 -I"../../h" -I"../h" -msmart-io=1 -msfr-warn=off
 	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/spiTx.o.d" $(SILENT)  -rsi ${MP_CC_DIR}../ 
+	
+${OBJECTDIR}/_ext/1360937237/digiPotDrv.o: ../src/digiPotDrv.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/_ext/1360937237 
+	@${RM} ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  ../src/digiPotDrv.c  -o ${OBJECTDIR}/_ext/1360937237/digiPotDrv.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d"        -g -omf=coff -legacy-libc -O0 -I"../../h" -I"../h" -msmart-io=1 -msfr-warn=off
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1360937237/digiPotDrv.o.d" $(SILENT)  -rsi ${MP_CC_DIR}../ 
 	
 endif
 
