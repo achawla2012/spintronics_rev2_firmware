@@ -13,6 +13,8 @@
 #include "p33exxxx.h"
 #include "spintronics.h"
 #include "generateAndProcessSamples.h"
+#include "balanceBridge.h"
+#include "uartDrv.h"
 
 /*
 i2sInit(): Initialise DCI for I2S
@@ -85,6 +87,17 @@ void i2sInit (void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
 {
+    uint8_t state;
+    
     IFS3bits.DCIIF = 0;
-    spintronicsStateMachine();
+
+    START_ATOMIC();
+    state = global_state;
+    END_ATOMIC();
+
+    if (state & BALANCE_BRIDGE_FSM_MASK) {
+        balanceBridgeFSM();
+    } else {
+        measurementFSM();
+    }
 }

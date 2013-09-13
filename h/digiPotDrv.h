@@ -10,13 +10,13 @@
  */
 
 //see getRBridgeOhms(uint16_t val) for corresponding values in ohms
-#define R_BRIDGE_MAX 1535//actually corresponds to Rmin
-#define R_BRIDGE_MIN 0//actually corresponds to Rmax
+#define R_BRIDGE_MAX 1535
+#define R_BRIDGE_MIN 0
 #define R_BRIDGE_MID 768
 
 //see getRAmpOhms(uint8_t val) for corresponding values in ohms
-#define R_AMP_MAX 255//actually corresponds to Rmin
-#define R_AMP_MIN 0//actually corresponds to Rmax
+#define R_AMP_MAX 255
+#define R_AMP_MIN 0
 #define R_AMP_MID 128
 
 extern void setRBridge(uint16_t val);

@@ -19,16 +19,16 @@
 #define M_PI_2 1.57079632679489661923
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClipFlag);
-void signalGenerator(unsigned char runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T);
-void shiftRegister( _Q15 cosOmega1T, _Q15 cosOmega2T, _Q15 *cosOmega1TTimeAligned, _Q15 *cosOmega2TTimeAligned);
-void measure(_Q15 bridgeSample, _Q15 coilSample, _Q15 *freqT, _Q15 cosOmega1TTimeAligned, _Q15 cosOmega2TTimeAligned, int64_t *cosAccumulator, int64_t *sinAccumulator);
+static void signalGenerator(unsigned char runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T);
+static void shiftRegister( _Q15 cosOmega1T, _Q15 cosOmega2T, _Q15 *cosOmega1TTimeAligned, _Q15 *cosOmega2TTimeAligned);
+static void measure(_Q15 bridgeSample, _Q15 coilSample, _Q15 *freqT, _Q15 cosOmega1TTimeAligned, _Q15 cosOmega2TTimeAligned, int64_t *cosAccumulator, int64_t *sinAccumulator);
 
 #ifdef TRIG_USES_LUT
 extern _Q15 _Q15cosPILUT(_Q15 phiOverPI);
 extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 #endif
 
-void spintronicsStateMachine()
+void measurementFSM(void)
 {
     volatile _Q15 bridgeSample;
     volatile _Q15 coilSample;
@@ -62,32 +62,10 @@ void spintronicsStateMachine()
     bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClipFlag);
     coilSample = RXBUF2;
 
-    if (GUIRequestingRun == false)//need to go to IDLE, clear all variables and disable the interrupt
-    {
-        state = IDLE;
-    }
-    else if (resetStateMachine == true)//if we just received a START command, the state machine needs to go to the RESET state first
-    {
-        state = RESET_STATE_MACHINE;
-    }
-
     switch (state)
     {
-        case IDLE:
-            timer = 0;
-            sensorIndex = 0;
-            configSensor(sensorAddressTable[sensorIndex]);
-            signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
-            cosAccumulator[0] = 0; cosAccumulator[1] = 0; cosAccumulator[2] = 0; cosAccumulator[3] = 0; cosAccumulator[4] = 0;
-            sinAccumulator[0] = 0; sinAccumulator[1] = 0; sinAccumulator[2] = 0; sinAccumulator[3] = 0; sinAccumulator[4] = 0;
-            bridgeADCClipFlag = false;
-            coilADCClipFlag = false;
-            bridgeDigitalClipFlag = false;
-            IEC3bits.DCIIE = 0;//disable the DCI interrupt
-            break;
 
-        case RESET_STATE_MACHINE:
+        case START_MEASUREMENT_FSM:
             resetStateMachine = false;//make sure to only hit RESET_STATE_MACHINE once for each START command
             timer = 0;
             sensorIndex = 0;
@@ -106,7 +84,7 @@ void spintronicsStateMachine()
             signalGenerator(RUN_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
             ++timer;
-            if (timer == SETUP_TIME)
+            if (timer == MEASUREMENT_SETUP_TIME)
             {
                 timer = 0;
                 state = MEASURE;

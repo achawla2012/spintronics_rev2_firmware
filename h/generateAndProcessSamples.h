@@ -10,4 +10,4 @@
  * michael.sandstedt@gmail.com
  */
 
-extern void spintronicsStateMachine();
+extern void measurementFSM(void);

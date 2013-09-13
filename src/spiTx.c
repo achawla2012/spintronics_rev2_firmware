@@ -112,9 +112,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
     }
     
     //AD5160 requires > 40ns for CS low-high setup before latching input
-    __asm__ volatile ("nop");
-    __asm__ volatile ("nop");
-    __asm__ volatile ("nop");
+    NOP();
+    NOP();
+    NOP();
     
     spiTxWorker();//continue transmission
 }
@@ -125,7 +125,7 @@ static void spiTxWorker(void)
     uint16_t numBytes;
     uint8_t i;
     
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
     if (spiTxEnd != spiTxCur)//test to see if there is still data to transmit!
     {
         numBytes = (spiTxBuf[spiTxCur] && SPI_TX_PL_SIZE_MASK) >> 8;
@@ -150,8 +150,8 @@ static void spiTxWorker(void)
             }
             
             //AD5160 requires > 15ns for CS high-low setup before sck starts
-            __asm__ volatile ("nop");
-            __asm__ volatile ("nop");
+            NOP();
+            NOP();
             
             for (i = 0; i < numBytes; ++i)
             {
@@ -166,7 +166,7 @@ static void spiTxWorker(void)
         }
     }
     
-    DISICNT = 0;//end critical section
+    END_ATOMIC();//end critical section
 }
 
 void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
@@ -174,7 +174,7 @@ void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
     bool spawnTxThread = false;
     uint8_t bufSpaceAvl, header, i;
     
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
 
     if (spiTxCur == spiTxEnd)
     {
@@ -209,7 +209,7 @@ void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
         }
     }
  
-    DISICNT = 0;//end critical section
+    END_ATOMIC;//end critical section
     
     if (spawnTxThread)
     {

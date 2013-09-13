@@ -16,6 +16,7 @@ extern void transmitResults(uint8_t sensor, double *phaseAngle, float *amplitude
 extern void transmitError(uint8_t errorCode);
 
 //global variables
+extern uint8_t global_state;
 extern bool GUIRequestingRun;
 extern bool resetStateMachine;
 extern uint32_t measurementTime;//units are samples
@@ -27,6 +28,7 @@ extern _Q15 a1;
 extern _Q15 a2;
 extern uint8_t sensorAddressTable[256];
 extern uint8_t numberOfSensors;
+
 
 /****************************************************************
  * The gain factor can be 0 to 8;

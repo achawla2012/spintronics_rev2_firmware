@@ -17,9 +17,9 @@
 #include "uartDrv.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//this is the bit pattern to disable both MUXs
-#define USB_TX_BUF_SIZE 512
-#define BT_TX_BUF_SIZE 512
-#define UART_RX_BUF_SZ 1024
+#define USB_TX_BUF_SIZE 256
+#define BT_TX_BUF_SIZE 256
+#define UART_RX_BUF_SZ 512
 
 #define FTDI_RST_BAR PORTFbits.RF5
 
@@ -35,6 +35,7 @@ static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
 
 //global variables
+uint8_t global_state;
 bool GUIRequestingRun;
 bool resetStateMachine;
 uint32_t measurementTime;//units are samples
@@ -783,7 +784,7 @@ void send(uint8_t *array, uint8_t numBytes)
 
 void usbTxWorker(void)
 {
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
     while (usbTxEnd != usbTxCur)//test to see if there is still data to transmit!
     {
         while (U1STAbits.UTXBF == 0)
@@ -796,12 +797,12 @@ void usbTxWorker(void)
             }
         }
     }
-    DISICNT = 0;//end critical section
+    END_ATOMIC();//end critical section
 }
 
 void btTxWorker(void)
 {
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
     while (btTxEnd != btTxCur)//test to see if there is still data to transmit!
     {
         while (U2STAbits.UTXBF == 0)
@@ -814,7 +815,7 @@ void btTxWorker(void)
             }
         }
     }
-    DISICNT = 0;//end critical section
+    END_ATOMIC();//end critical section
 }
 
 bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
@@ -822,7 +823,7 @@ bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
     bool spawnTxThread = false;
     uint16_t bufSpaceAvl, i;
 
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
 
     if (usbTxEnd == usbTxCur)
     {
@@ -854,7 +855,7 @@ bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
             }
         }
     }
-    DISICNT = 0;//end critical section
+    END_ATOMIC();//end critical section
     return spawnTxThread;
 }
 
@@ -863,7 +864,7 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
     bool spawnTxThread = false;
     uint16_t bufSpaceAvl, i;
 
-    __asm__ volatile ("disi #0x3FFF");//begin critical section; must be atomic!
+    START_ATOMIC();//begin critical section; must be atomic!
     
     if (btTxEnd == btTxCur)
     {
@@ -895,7 +896,7 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
             }
         }
     }
-    DISICNT = 0;//end critical section
+    END_ATOMIC();//end critical section
     return spawnTxThread;
 }
 

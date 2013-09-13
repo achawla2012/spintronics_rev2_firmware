@@ -72,9 +72,18 @@
 #define PROCESSOR_CYCLES_PER_US 70
 
 #ifdef SIMULATION_MODE
-#define SETUP_TIME 10 //units are samples
+#define MEASUREMENT_SETUP_TIME 10
+#define GAIN_CHECK_SETUP_TIME 10
+#define BRIDGE_CHECK_SETUP_TIME 10
+#define GAIN_CHECK_MEASURE_CYCLES 1
+#define BRIDGE_CHECK_MEASURE_TIME_MULTIPLIER 1
 #else
-#define SETUP_TIME 1000 //units are samples//the amount of time to let the transients settle after switching sensors
+//units are samples//the amount of time to let the transients settle after switching sensors
+#define MEASUREMENT_SETUP_TIME 1000
+#define GAIN_CHECK_SETUP_TIME 50
+#define BRIDGE_CHECK_SETUP_TIME 100
+#define GAIN_CHECK_MEASURE_CYCLES 2
+#define BRIDGE_CHECK_MEASURE_TIME_MULTIPLIER 3
 #endif
 
 //coil ADC//uncomment ONE of these, depending on the current sense resistor value used in hardware
@@ -107,14 +116,33 @@
 #define MAX_MEASUREMENT_SAMPLES 0x7FFF0000//the counters that keep track of this are uint32_t; must be strictly less than 0x8000000 to avoid ambiguity when casting to int32_t
 #define MIN_MEASUREMENT_SAMPLES 1000//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD
 
-//state encoding
-#define IDLE 0
-#define RESET_STATE_MACHINE 1
-#define CALIBRATE_ADC 2
-#define WAIT_FOR_HPF_DISABLE_MESSAGE_TX 3
-#define START_SIGNAL_GEN 4
-#define	MEASURE 5
-#define	CALCULATE_VECTORS 6
+//states for bridgeBalanceFSM() must have bit 7 set!
+#define BALANCE_BRIDGE_FSM_MASK                 0x40
+#define IDLE                                    0x40
+#define START_BRIDGE_BALANCE_FSM                0x41
+#define START_GAIN_CAL                          0x42
+#define SET_R_AMP_TO_LO_MID                     0x43
+#define R_AMP_LO_MID_SIGNAL_SETTLING            0x44
+#define R_AMP_LO_MID_CLIP_TEST                  0x45
+#define SET_R_AMP_TO_HI_MID                     0x46
+#define R_AMP_HI_MID_SIGNAL_SETTLING            0x47
+#define R_AMP_HI_MID_CLIP_TEST                  0x48
+#define START_BRIDGE_CAL                        0x49
+#define SET_R_BRIDGE_TO_LO_MID                  0x4A
+#define R_BRIDGE_LO_MID_SIGNAL_SETTLING         0x4B
+#define R_BRIDGE_LO_MID_AMP_MEASURE             0x4C
+#define R_BRIDGE_LO_MID_AMP_CALC                0x4D
+#define SET_R_BRIDGE_TO_HI_MID                  0x4E
+#define R_BRIDGE_HI_MID_SIGNAL_SETTLING         0x4F
+#define R_BRIDGE_HI_MID_AMP_MEASURE             0x50
+#define R_BRIDGE_HI_MID_AMP_CALC                0x51
+
+//states for measurementFSM() must have bit 8 set!
+#define MEASUREMENT_FSM_MASK                    0x80
+#define START_MEASUREMENT_FSM                   0x81
+#define START_SIGNAL_GEN                        0x82
+#define	MEASURE                                 0x83
+#define	CALCULATE_VECTORS                       0x84
 
 //signal generator state encoding
 #define RESET_SIGNAL_GEN 0
@@ -142,10 +170,19 @@
 #define BRIDGE_ADC_CLIP 0x09
 #define COIL_ADC_CLIP 0x0A
 #define BRIDGE_DIGITAL_CLIP 0x0B
+#define BRIDGE_BALANCE_FAILURE 0x0C
+#define A1_CHANGED_DURING_BRIDGE_BALANCE 0x0D
+#define F1_CHANGED_DURING_BRIDGE_BALANCE 0x0E
 
 #include <math.h>
 #include <libq.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+
 int32_t asm16X16Mult(int16_t, int16_t);
+
+extern inline void START_ATOMIC(void);
+extern inline void END_ATOMIC(void);
+extern inline void NOP(void);
