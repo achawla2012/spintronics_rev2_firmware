@@ -1,8 +1,12 @@
-/* 
- * File:   balanceBridge.h
- * Author: Michael R Sandstedt
+/*
+ * balanceBridge.h
  *
- * Created on September 13, 2013, 3:13 AM
+ * Author: Michael Reinhart Sandstedt
+ *
+ * First release: September 12th, 2013
+ *
+ * questions or support:
+ * michael.sandstedt@gmail.com
  */
 
 extern void balanceBridgeFSM(void);

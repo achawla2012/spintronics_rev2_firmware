@@ -36,8 +36,6 @@ void balanceBridgeFSM(void)
     static uint8_t local_state;
     static _Q15 local_a1 = 0;
     static _Q15 local_f1 = 0;
-    bool a1_match = true;
-    bool f1_match = true;
     static _Q15 gain_check_measure_time;
     static _Q15 bridge_check_measure_time;
     static uint32_t timer;
@@ -63,8 +61,9 @@ void balanceBridgeFSM(void)
     static float r_bridge_hi_mid_amplitude;
 
     bool advance_state = false;
+    bool a1_match = true;
+    bool f1_match = true;
 
-    START_ATOMIC;//begin critical section; must be atomic!
     local_state = global_state;
     END_ATOMIC();//end critical section
 
@@ -108,7 +107,7 @@ void balanceBridgeFSM(void)
                 bridge_check_measure_time = bridge_check_measure_time_32;
             }
 
-            IEC3bits.DCIIE = 0;//re-enable DCI interrupt
+            IEC3bits.DCIIE = 1;//re-enable DCI interrupt
 
             balanceBridgeGenerator(RESET_SIGNAL_GEN, local_a1, local_f1, &cosOmegaT, &sinOmegaT);//use the same frequency and amplitude to balance the bridge as will be used during measurement
             local_state = START_GAIN_CAL;
@@ -117,6 +116,8 @@ void balanceBridgeFSM(void)
 
         
         case START_GAIN_CAL:
+        {
+            uint8_t sensorAddress;
 
             timer = 0;
 
@@ -127,7 +128,7 @@ void balanceBridgeFSM(void)
             if (local_f1 != f1) {
                 f1_match = false;
             }
-            configSensor(sensorAddressTable[sensorIndex]);
+            sensorAddress = sensorAddressTable[sensorIndex];
             END_ATOMIC();//end critical section
 
             if (!a1_match) {
@@ -135,7 +136,10 @@ void balanceBridgeFSM(void)
                 local_state = IDLE;
             } else if (!f1_match) {
                 transmitError(F1_CHANGED_DURING_BRIDGE_BALANCE);
+                local_state = IDLE;
             } else {
+
+                configSensor(sensorAddress);
 
                 //set r_bridge to initial value
                 setRBridge(R_BRIDGE_MID);
@@ -148,7 +152,7 @@ void balanceBridgeFSM(void)
                 local_state = SET_R_AMP_TO_LO_MID;
             }
             break;
-
+        }
 
         case SET_R_AMP_TO_LO_MID:
 
@@ -501,12 +505,13 @@ void balanceBridgeFSM(void)
 
             }
 
-            IEC3bits.DCIIE = 0;//re-enable the DCI interrupt
+            IEC3bits.DCIIE = 1;//re-enable the DCI interrupt
             break;
         }
 
         default:
             local_state = IDLE;
+            break;
 
     }
 
@@ -516,7 +521,7 @@ void balanceBridgeFSM(void)
         && global_state != START_MEASUREMENT_FSM) {
 
         /*
-         * if we hit here, we're assured that no messages from UART will
+         * if we hit here, we're assured that no messages from UART should
          * override our next state
          */
         global_state = local_state;

@@ -1,3 +1,14 @@
+/*
+ * utility.c
+ *
+ * Author: Michael Reinhart Sandstedt
+ *
+ * First release: September 13th, 2013
+ *
+ * questions or support:
+ * michael.sandstedt@gmail.com
+ */
+
 #include "p33exxxx.h"
 
 inline void START_ATOMIC(void)

@@ -35,9 +35,7 @@ static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
 
 //global variables
-uint8_t global_state;
-bool GUIRequestingRun;
-bool resetStateMachine;
+uint8_t global_state = IDLE;
 uint32_t measurementTime;//units are samples
 _Q15 f1;//units are Q15 half-cycles per sample-period
 _Q15 f2;//units are Q15 half-cycles per sample-period
@@ -199,9 +197,12 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
         startPayload_confirmToGUI[24] = startPayload_confirmToGUI[24] ^ startPayload_confirmToGUI[i];
     }
     send(startPayload_confirmToGUI,25);
-    GUIRequestingRun = true;//setting this global variable to 'true' and enabling the DCI interrupt starts the state machine
-    resetStateMachine = true;//set this to make sure all accumulators are cleared when measurement begins.
+
+    START_ATOMIC();
     IEC3bits.DCIIE = 1;//enable the interrupt to start measurement!
+    global_state = START_MEASUREMENT_FSM;
+    END_ATOMIC();
+
 }
 
 float setVolume(uint8_t channel, float voltage)
@@ -257,8 +258,6 @@ void uart_Init (void)
      * initialization of global variables
      **************************************************************************/
 
-    GUIRequestingRun = false;
-    resetStateMachine = true;
     measurementTime = SAMPLE_RATE;
     f1 = 0;
     f2 = 0;
@@ -928,16 +927,21 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
        }
       if (payload[1] == StopCommand)
        {
-        GUIRequestingRun= false;
-        payload[1] = confirm_StopCommand;
-        payload[2] = 0;
-        payload[3] = payload[1] ^ payload[2];
-        send(payload, 4);
+          START_ATOMIC();
+          global_state = IDLE;
+          END_ATOMIC();
+
+          payload[1] = confirm_StopCommand;
+          payload[2] = 0;
+          payload[3] = payload[1] ^ payload[2];
+          send(payload, 4);
        }
        if (payload[1] == MuxAddressing)
        {
             //transmit multiplexer addresses to state machine
+            START_ATOMIC();
             numberOfSensors = payload[2];
+
             if (0 == numberOfSensors)//make sure the sensor address table has at least 1 entry
             {
                 numberOfSensors = 1;
@@ -950,6 +954,8 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
                   sensorAddressTable[i] = payload[3+i];
                 }
             }
+            END_ATOMIC();
+
             payload[1] = confirm_MuxAddressing;
             payload[2] =0;
             payload[3] = payload[1] ^ payload[2];

@@ -140,9 +140,10 @@
 //states for measurementFSM() must have bit 8 set!
 #define MEASUREMENT_FSM_MASK                    0x80
 #define START_MEASUREMENT_FSM                   0x81
-#define START_SIGNAL_GEN                        0x82
-#define	MEASURE                                 0x83
-#define	CALCULATE_VECTORS                       0x84
+#define START_NEW_MEASUREMENT_CYCLE             0x82
+#define START_SIGNAL_GEN                        0x83
+#define	MEASURE                                 0x84
+#define	CALCULATE_VECTORS                       0x85
 
 //signal generator state encoding
 #define RESET_SIGNAL_GEN 0

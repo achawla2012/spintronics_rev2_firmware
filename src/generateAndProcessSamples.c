@@ -14,6 +14,7 @@
 #include "spintronics.h"
 #include "uartDrv.h"
 #include "muxControl.h"
+#include "balanceBridge.h"
 
 #define M_PI 3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
@@ -30,9 +31,10 @@ extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 
 void measurementFSM(void)
 {
+    static uint8_t sensorAddress;
     volatile _Q15 bridgeSample;
     volatile _Q15 coilSample;
-    static uint8_t state = IDLE;
+    static uint8_t local_state;
     static uint32_t timer;
     static uint8_t sensorIndex;
     _Q15 cosOmega1T;//fractions of full-scale //aligned to compensate for ADCDAC_GROUP_DELAY
@@ -45,6 +47,9 @@ void measurementFSM(void)
     static bool bridgeADCClipFlag;
     static bool coilADCClipFlag;
     static bool bridgeDigitalClipFlag;
+
+    local_state = global_state;
+    END_ATOMIC();
 
 #ifdef SIMULATION_MODE
     uint16_t RXBUF2 = rand();//only to give random stimulus during simulation
@@ -62,14 +67,21 @@ void measurementFSM(void)
     bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClipFlag);
     coilSample = RXBUF2;
 
-    switch (state)
+    switch (local_state)
     {
 
         case START_MEASUREMENT_FSM:
-            resetStateMachine = false;//make sure to only hit RESET_STATE_MACHINE once for each START command
-            timer = 0;
+
             sensorIndex = 0;
-            configSensor(sensorAddressTable[sensorIndex]);
+            signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
+            local_state = START_NEW_MEASUREMENT_CYCLE;
+            break;
+
+        case START_NEW_MEASUREMENT_CYCLE:
+        {
+            uint16_t r_bridge;
+
+            timer = 0;
             signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
             cosAccumulator[0] = 0; cosAccumulator[1] = 0; cosAccumulator[2] = 0; cosAccumulator[3] = 0; cosAccumulator[4] = 0;
@@ -77,17 +89,25 @@ void measurementFSM(void)
             bridgeADCClipFlag = false;
             coilADCClipFlag = false;
             bridgeDigitalClipFlag = false;
-            state = START_SIGNAL_GEN;
-            break;
 
+            START_ATOMIC();
+            sensorAddress = sensorAddressTable[sensorIndex];
+            r_bridge = sensorRBridgeTable[sensorIndex];
+            END_ATOMIC();
+            
+            configSensor(sensorAddress);
+            setRBridge(r_bridge);
+            
+        }
         case START_SIGNAL_GEN:
+
             signalGenerator(RUN_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
             ++timer;
             if (timer == MEASUREMENT_SETUP_TIME)
             {
                 timer = 0;
-                state = MEASURE;
+                local_state = MEASURE;
             }
             break;            
 
@@ -99,7 +119,7 @@ void measurementFSM(void)
             if (timer == measurementTime)
             {
                 timer = 0;
-                state = CALCULATE_VECTORS;
+                local_state = CALCULATE_VECTORS;
             }
             break;
 
@@ -191,37 +211,36 @@ void measurementFSM(void)
                 }
             }
             //transmit results
-            transmitResults(sensorAddressTable[sensorIndex], phaseAngle, amplitude, bridgeADCClipFlag, coilADCClipFlag, bridgeDigitalClipFlag);//don't do this until the state machine is ready for the next measurment period; transmitting results takes more than one sample period.
+            transmitResults(sensorAddress, phaseAngle, amplitude, bridgeADCClipFlag, coilADCClipFlag, bridgeDigitalClipFlag);
 
-            //clear static variables for next iteration of the state machine
-            signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
-            cosAccumulator[0] = 0; cosAccumulator[1] = 0; cosAccumulator[2] = 0; cosAccumulator[3] = 0; cosAccumulator[4] = 0;
-            sinAccumulator[0] = 0; sinAccumulator[1] = 0; sinAccumulator[2] = 0; sinAccumulator[3] = 0; sinAccumulator[4] = 0;
-            timer = 0;
-            bridgeADCClipFlag = false;
-            coilADCClipFlag = false;
-            bridgeDigitalClipFlag = false;
             ++sensorIndex;
             if (sensorIndex == numberOfSensors)
             {
                 sensorIndex = 0;
             }
-            configSensor(sensorAddressTable[sensorIndex]);
-            state = START_SIGNAL_GEN;
+            local_state = START_NEW_MEASUREMENT_CYCLE;
             IEC3bits.DCIIE = 1;//re-enable the DCI interrupt
             break;
         }
         default:
-            cosAccumulator[0] = 0; cosAccumulator[1] = 0; cosAccumulator[2] = 0; cosAccumulator[3] = 0; cosAccumulator[4] = 0;
-            sinAccumulator[0] = 0; sinAccumulator[1] = 0; sinAccumulator[2] = 0; sinAccumulator[3] = 0; sinAccumulator[4] = 0;
-            timer = 0;
-            bridgeADCClipFlag = false;
-            coilADCClipFlag = false;
-            bridgeDigitalClipFlag = false;
-            state = IDLE;
-            sensorIndex = 0;
+            local_state = IDLE;
             break;
     }
+
+    START_ATOMIC();
+    if (   global_state != IDLE
+        && global_state != START_BRIDGE_BALANCE_FSM
+        && global_state != START_MEASUREMENT_FSM) {
+
+        /*
+         * if we hit here, we're assured that no messages from UART should
+         * override our next state
+         */
+        global_state = local_state;
+
+    }
+    END_ATOMIC();
+
 }
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClipFlag)
