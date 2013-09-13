@@ -1,0 +1,6 @@
+*.map
+*.o
+*.o.d
+*.hex
+*.mk
+*.properties
