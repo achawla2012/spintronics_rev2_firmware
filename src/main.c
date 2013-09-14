@@ -51,6 +51,7 @@ int main(void)
     spiInit();// init SPI for controlling digi pots
     cs4272Init();// establish communication with the CS4272
     muxInit();// setup pins to communicate with the multiplexer
+    timerInit();//initialize the timer
     uart_Init();// Init UART for GUI communication
     
 #ifdef SIMULATION_MODE

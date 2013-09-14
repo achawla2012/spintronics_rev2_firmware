@@ -28,6 +28,7 @@ extern _Q15 a1;
 extern _Q15 a2;
 extern uint8_t sensorAddressTable[256];
 extern uint8_t numberOfSensors;
+extern bool f1PlusF2OutOfRange;
 
 
 /****************************************************************

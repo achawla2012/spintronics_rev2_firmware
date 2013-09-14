@@ -46,9 +46,9 @@ _Q15 a2;
 uint8_t sensorAddressTable[256];
 uint8_t numberOfSensors;
 uint8_t bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
+bool f1PlusF2OutOfRange;
 
 //static variables
-static bool f1PlusF2OutOfRangeFlag;
 static uint8_t numBytesInPayload=0, findEndOfPayload=0;
 static bool USBMode;
 static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
@@ -105,10 +105,10 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
         implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
     }
 
-    f1PlusF2OutOfRangeFlag = false;
+    f1PlusF2OutOfRange = false;
     if (GUISpecifiedF1 + GUISpecifiedF2 > maxOutputFrequency)
     {
-        f1PlusF2OutOfRangeFlag = true;
+        f1PlusF2OutOfRange = true;
         transmitError(F1_PLUS_F2_OUT_OF_RANGE);
         fsum = 0;
         implementedFSum = 0;
@@ -505,203 +505,26 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
     btTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
 }
 
-void transmitResults(uint8_t sensor, double *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag)
+void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag)
 {
     uint8_t txbuffer[45],i;
-    float f1BridgeVolts;
-    float f2BridgeVolts;
-    float fdiffBridgeVolts;
-    float fsumBridgeVolts;
-    float f2CoilAmps;
-
-    float f1BridgeRadians;
-    float f2BridgeRadians;
-    float fdiffBridgeRadians;
-    float fsumBridgeRadians;
-    float f2CoilRadians;
-
-#ifdef REPORT_RECTANGULAR_VECTORS_FOR_BRIDGE
-    float f1BridgeInPhaseVolts, f1BridgeQuadratureVolts, f2BridgeInPhaseVolts, f2BridgeQuadratureVolts, fDiffBridgeInPhaseVolts, fDiffBridgeQuadratureVolts, fSumBridgeInPhaseVolts, fSumBridgeQuadratureVolts;
-#endif
-    switch(bridgeADCGainFactor)//if digital gain was added, need to scale the reported voltage appropriately
-    {
-        case 0:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-            }
-            break;
-        }
-        case 1:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_2;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_2;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_2;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_2;
-            }
-            break;
-        }
-        case 2:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_4;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_4;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_4;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_4;
-            }
-            break;
-        }
-        case 3:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_8;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_8;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_8;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_8;
-            }
-            break;
-        }
-        case 4:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_16;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_16;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_16;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS_DIVIDED_BY_16;
-            }
-            break;
-        }
-        default:
-        {
-            f1BridgeVolts = amplitude[0] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-#ifdef MEASURE_F2_AT_BRIDGE
-            f2BridgeVolts = amplitude[1] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-#else
-            f2BridgeVolts = 0.0;
-#endif
-            fdiffBridgeVolts = amplitude[2] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-            fsumBridgeVolts;
-            if (f1PlusF2OutOfRangeFlag)
-            {
-                fsumBridgeVolts = 0;
-            }
-            else
-            {
-                fsumBridgeVolts = amplitude[3] * FULLSCALE_BRIDGE_ADC_BUFFER_VOLTS;
-            }
-            break;
-        }
-    }
-
-    f2CoilAmps = amplitude[4] * A_COIL_CORRESPONDING_TO_ADC_FULLSCALE;
-
-    f1BridgeRadians = phaseAngle[0] - BRIDGE_ADC_F1_PHASE_OFFSET;
-#ifdef MEASURE_F2_AT_BRIDGE
-    f2BridgeDegrees = phaseAngle[1];
-#else
-    f2BridgeRadians = 0.0;
-#endif
-    fdiffBridgeRadians = phaseAngle[2] - BRIDGE_ADC_FDIFF_PHASE_OFFSET;
-    if (f1PlusF2OutOfRangeFlag)
-    {
-        fsumBridgeRadians = 0;
-    }
-    else
-    {
-        fsumBridgeRadians = phaseAngle[3] - BRIDGE_ADC_FSUM_PHASE_OFFSET;
-    }
-    f2CoilRadians = phaseAngle[4];
-
-#ifdef REPORT_RECTANGULAR_VECTORS_FOR_BRIDGE
-    f1BridgeInPhaseVolts = f1BridgeVolts * cosf(f1BridgeRadians);
-    f1BridgeQuadratureVolts = f1BridgeVolts * sinf(f1BridgeRadians);
-    f2BridgeInPhaseVolts = f2BridgeVolts * cosf(f2BridgeRadians);
-    f2BridgeQuadratureVolts = f2BridgeVolts * sinf(f2BridgeRadians);
-    fDiffBridgeInPhaseVolts = fdiffBridgeVolts * cosf(fdiffBridgeRadians);
-    fDiffBridgeQuadratureVolts = fdiffBridgeVolts * sinf(fdiffBridgeRadians);
-    fSumBridgeInPhaseVolts = fsumBridgeVolts * cosf(fsumBridgeRadians);
-    fSumBridgeQuadratureVolts = fsumBridgeVolts * sinf(fsumBridgeRadians);
-#endif
 
     txbuffer[0] = 0xFE;
     txbuffer[1] = 0x82;
     txbuffer[2] = 0x29;
     txbuffer[3] = sensor;
-#ifdef REPORT_RECTANGULAR_VECTORS_FOR_BRIDGE
-    float_to_bytes(f1BridgeInPhaseVolts, &txbuffer[4]);
-    float_to_bytes(f1BridgeQuadratureVolts, &txbuffer[8]);
-    float_to_bytes(f2BridgeInPhaseVolts, &txbuffer[12]);
-    float_to_bytes(f2BridgeQuadratureVolts, &txbuffer[16]);
-    float_to_bytes(fDiffBridgeInPhaseVolts, &txbuffer[20]);
-    float_to_bytes(fDiffBridgeQuadratureVolts, &txbuffer[24]);
-    float_to_bytes(fSumBridgeInPhaseVolts, &txbuffer[28]);
-    float_to_bytes(fSumBridgeQuadratureVolts, &txbuffer[32]);
-#else
-    float_to_bytes(f1BridgeVolts, &txbuffer[4]);
-    float_to_bytes(f1BridgeRadians, &txbuffer[8]);
-    float_to_bytes(f2BridgeVolts, &txbuffer[12]);
-    float_to_bytes(f2BridgeRadians, &txbuffer[16]);
-    float_to_bytes(fdiffBridgeVolts, &txbuffer[20]);
-    float_to_bytes(fdiffBridgeRadians, &txbuffer[24]);
-    float_to_bytes(fsumBridgeVolts, &txbuffer[28]);
-    float_to_bytes(fsumBridgeRadians, &txbuffer[32]);
+
+    float_to_bytes(amplitude[0], &txbuffer[4]);
+    float_to_bytes(phaseAngle[0], &txbuffer[8]);
+    float_to_bytes(amplitude[1], &txbuffer[12]);
+    float_to_bytes(phaseAngle[1], &txbuffer[16]);
+    float_to_bytes(amplitude[2], &txbuffer[20]);
+    float_to_bytes(phaseAngle[2], &txbuffer[24]);
+    float_to_bytes(amplitude[3], &txbuffer[28]);
+    float_to_bytes(phaseAngle[3], &txbuffer[32]);
 #endif
-    float_to_bytes(f2CoilAmps, &txbuffer[36]);
-    float_to_bytes(f2CoilRadians, &txbuffer[40]);
+    float_to_bytes(amplitude[4], &txbuffer[36]);
+    float_to_bytes(phaseAngle[4], &txbuffer[40]);
 
     txbuffer[44] =0;
     for (i = 1; i < 44; i++)
@@ -938,7 +761,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
        if (payload[1] == MuxAddressing)
        {
             //transmit multiplexer addresses to state machine
-            START_ATOMIC();
+            START_ATOMIC();//begin critical section; must be atomic!
             numberOfSensors = payload[2];
 
             if (0 == numberOfSensors)//make sure the sensor address table has at least 1 entry
@@ -953,7 +776,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
                   sensorAddressTable[i] = payload[3+i];
                 }
             }
-            END_ATOMIC();
+            END_ATOMIC();//end critical section
 
             payload[1] = confirm_MuxAddressing;
             payload[2] =0;

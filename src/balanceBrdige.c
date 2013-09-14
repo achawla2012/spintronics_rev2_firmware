@@ -313,9 +313,13 @@ void balanceBridgeFSM(void)
             break;
 
         case R_BRIDGE_LO_MID_AMP_MEASURE:
+        {
+            volatile _Q15 bridgeSample;
+
+            bridgeSample = RXBUF0;
 
             //see if the signal is clipping with this gain
-            if (RXBUF0 == 0x7FFF || RXBUF0 == 0x8000) {
+            if (bridgeSample == 0x7FFF || bridgeSample == 0x8000) {
 
                 //we clipped! reduce gain and abort this measurement
                 timer = 0;
@@ -335,19 +339,18 @@ void balanceBridgeFSM(void)
 
             } else {
 
-                volatile _Q15 bridgeSample;
                 balanceBridgeMeasure(bridgeSample, cosOmegaT, sinOmegaT, &cosAccumulator, &sinAccumulator);
                 ++timer;
                 if (bridge_check_measure_time == timer) {
                     timer = 0;
                     local_state = R_BRIDGE_LO_MID_AMP_CALC;
                 } else {
-                    bridgeSample = RXBUF0;
                     balanceBridgeGenerator(RUN_SIGNAL_GEN, local_a1, local_f1, &cosOmegaT, &sinOmegaT);
                 }
 
             }
             break;
+        }
 
 
         case R_BRIDGE_LO_MID_AMP_CALC:
@@ -413,10 +416,13 @@ void balanceBridgeFSM(void)
             break;
 
         case R_BRIDGE_HI_MID_AMP_MEASURE:
+        {
+            volatile _Q15 bridgeSample;
 
+            bridgeSample = RXBUF0;
 
             //see if the signal is clipping with this gain
-            if (RXBUF0 == 0x7FFF || RXBUF0 == 0x8000) {
+            if (bridgeSample == 0x7FFF || bridgeSample == 0x8000) {
 
                 //we clipped! reduce gain and abort this measurement
                 timer = 0;
@@ -436,20 +442,19 @@ void balanceBridgeFSM(void)
 
             } else {
                 
-                volatile _Q15 bridgeSample;
                 balanceBridgeMeasure(bridgeSample, cosOmegaT, sinOmegaT, &cosAccumulator, &sinAccumulator);
                 ++timer;
                 if (bridge_check_measure_time == timer) {
                     timer = 0;
                     local_state = R_BRIDGE_HI_MID_AMP_CALC;
                 } else {
-                    bridgeSample = RXBUF0;
                     balanceBridgeGenerator(RUN_SIGNAL_GEN, local_a1, local_f1, &cosOmegaT, &sinOmegaT);
                 }
 
             }
             break;
-            
+        }
+
 
         case R_BRIDGE_HI_MID_AMP_CALC:
         {
@@ -498,11 +503,16 @@ void balanceBridgeFSM(void)
                 sensorRBridgeTable[sensorIndex] = r_bridge_min;
                 ++sensorIndex;
                 START_ATOMIC();
-                if (sensorIndex == numberOfSensors) {
+                if (sensorIndex >= numberOfSensors) {
+
+                    /*
+                     * must test >= in case numberOfSensors was updated since
+                     * the last iteration of this FSM
+                     */
                     sensorRBridgeTableValid = true;
                     local_state = START_MEASUREMENT_FSM;
                 } else {
-                    local_state = START_BRIDGE_BALANCE_FSM;
+                    local_state = START_GAIN_CAL;
                 }
 
             } else {

@@ -10,16 +10,16 @@
  * michael.sandstedt@gmail.com
  */
 
+//////////////////TODO: use local static, not global
+
 #include "p33exxxx.h"
 #include "spintronics.h"
 #include "uartDrv.h"
 #include "muxControl.h"
 #include "balanceBridge.h"
+#include "calculateVectors.h"
 
-#define M_PI 3.14159265358979323846
-#define M_PI_2 1.57079632679489661923
-
-_Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClipFlag);
+_Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip);
 static void signalGenerator(unsigned char runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T);
 static void shiftRegister( _Q15 cosOmega1T, _Q15 cosOmega2T, _Q15 *cosOmega1TTimeAligned, _Q15 *cosOmega2TTimeAligned);
 static void measure(_Q15 bridgeSample, _Q15 coilSample, _Q15 *freqT, _Q15 cosOmega1TTimeAligned, _Q15 cosOmega2TTimeAligned, int64_t *cosAccumulator, int64_t *sinAccumulator);
@@ -31,9 +31,13 @@ extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 
 void measurementFSM(void)
 {
-    static uint8_t sensorAddress;
     volatile _Q15 bridgeSample;
     volatile _Q15 coilSample;
+
+    uint8_t errorCode = 0x00;
+    bool errorFlag = false;
+
+    static uint8_t sensorAddress;
     static uint8_t local_state;
     static uint32_t timer;
     static uint8_t sensorIndex;
@@ -44,12 +48,22 @@ void measurementFSM(void)
     static _Q15 freqT[6];//array contents: 2*f1*t, 2*f2*t, 2*f1*(t + ADCDAC_GROUP_DELAY), 2*f2*(t + ADCDAC_GROUP_DELAY), 2*fdiff*(t + ADCDAC_GROUP_DELAY), 2*fsum*(t + ADCDAC_GROUP_DELAY)
     static int64_t cosAccumulator[5];
     static int64_t sinAccumulator[5];
-    static bool bridgeADCClipFlag;
-    static bool coilADCClipFlag;
-    static bool bridgeDigitalClipFlag;
+    static bool bridgeADCClip;
+    static bool coilADCClip;
+    static bool bridgeDigitalClip;
 
-    uint8_t errorCode = 0x00;
-    bool errorFlag = false;
+    //local variables to capture globals
+    static uint32_t localMPeriod;//units are samples
+    static _Q15 local_f1;//units are Q15 half-cycles per sample-period
+    static _Q15 local_f2;//units are Q15 half-cycles per sample-period
+    static _Q15 local_fdiff;//units are Q15 half-cycles per sample-period
+    static _Q15 local_fsum;//units are Q15 half-cycles per sample-period
+    static _Q15 local_a1;
+    static _Q15 local_a2;
+    static uint8_t local_num_sensors;
+    static uint8_t local_bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
+    static bool local_f1PlusF2OutOfRange;
+
 
     //START_ATOMIC() called from calling ISR
     local_state = global_state;
@@ -67,13 +81,13 @@ void measurementFSM(void)
 
     if (RXBUF0 == 0x7FFF || RXBUF0 == 0x8000)
     {
-        bridgeADCClipFlag = true;
+        bridgeADCClip = true;
     }
     if (RXBUF2 == 0x7FFF || RXBUF2 == 0x8000)
     {
-        coilADCClipFlag = true;
+        coilADCClip = true;
     }
-    bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClipFlag);
+    bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClip);
     coilSample = RXBUF2;
 
     switch (local_state)
@@ -86,6 +100,18 @@ void measurementFSM(void)
                 errorFlag = true;
                 errorCode = ATTEMPT_MEASURE_WITHOUT_BALANCED_BRIDGE;
             }
+
+            //copy in globals
+            localMPeriod = measurementTime;
+            local_f1 = f1;
+            local_f2 = f2;
+            local_fdiff = fdiff;
+            local_fsum = fsum;
+            local_a1 = a1;
+            local_a2 = a2;
+            local_num_sensors = numberOfSensors;
+            local_bridgeADCGainFactor = bridgeADCGainFactor;
+            local_f1PlusF2OutOfRange = f1PlusF2OutOfRange;
             END_ATOMIC();//end critical section
 
             if (errorFlag) {
@@ -107,9 +133,9 @@ void measurementFSM(void)
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
             cosAccumulator[0] = 0; cosAccumulator[1] = 0; cosAccumulator[2] = 0; cosAccumulator[3] = 0; cosAccumulator[4] = 0;
             sinAccumulator[0] = 0; sinAccumulator[1] = 0; sinAccumulator[2] = 0; sinAccumulator[3] = 0; sinAccumulator[4] = 0;
-            bridgeADCClipFlag = false;
-            coilADCClipFlag = false;
-            bridgeDigitalClipFlag = false;
+            bridgeADCClip = false;
+            coilADCClip = false;
+            bridgeDigitalClip = false;
 
             START_ATOMIC();
             sensorAddress = sensorAddressTable[sensorIndex];
@@ -146,101 +172,21 @@ void measurementFSM(void)
 
         case CALCULATE_VECTORS:
         {
-            uint8_t i;
-            double cosAccumulatorFloat[5];
-            double sinAccumulatorFloat[5];
-            double phaseAngle[5];
-            float amplitude[5];
+            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T);
+            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
 
-            IEC3bits.DCIIE = 0;//disable the interrupt while this calculation is taking place because the floating point calculations take much longer than one sample period
-
-            cosAccumulatorFloat[0] = (double)cosAccumulator[0];
-            sinAccumulatorFloat[0] = (double)sinAccumulator[0];
-            phaseAngle[0] = atan2(sinAccumulatorFloat[0], cosAccumulatorFloat[0]);
-            if (fabs(cosAccumulatorFloat[0]) > fabs(sinAccumulatorFloat[0]))
-            {
-                amplitude[0] = cosAccumulatorFloat[0] / (1.07374182e9 * cosf(phaseAngle[0]) * measurementTime);
-            }
-            else
-            {
-                amplitude[0] = sinAccumulatorFloat[0] / (1.07374182e9 * sinf(phaseAngle[0]) * measurementTime);
-            }
-            if(amplitude[0] < 0)//make sure amplitude is positive
-            {
-                amplitude[0] = fabsf(amplitude[0]);
-                if (phaseAngle[0] < 0)
-                {
-                    phaseAngle[0] = phaseAngle[0] + M_PI_2;
-                }
-                else
-                {
-                    phaseAngle[0] = phaseAngle[0] - M_PI_2;
-                }
-            }
-#ifdef MEASURE_F2_AT_BRIDGE
-            cosAccumulatorFloat[1] = (double)cosAccumulator[1];
-            sinAccumulatorFloat[1] = (double)sinAccumulator[1];
-            phaseAngle[1] = atan2(sinAccumulatorFloat[1], cosAccumulatorFloat[1]);
-            if (fabs(cosAccumulatorFloat[1]) > fabs(sinAccumulatorFloat[1]))
-            {
-                amplitude[1] = cosAccumulatorFloat[1] / (1.07374182e9 * cos(phaseAngle[1]) * measurementTime);
-            }
-            else
-            {
-                amplitude[1] = sinAccumulatorFloat[1] / (1.07374182e9 * sin(phaseAngle[1]) * measurementTime);
-            }
-            if(amplitude[1] < 0)//make sure amplitude is positive
-            {
-                amplitude[1] = fabsf(amplitude[0]);
-                if (phaseAngle[1] < 0)
-                {
-                    phaseAngle[1] = phaseAngle[1] + M_PI_2;
-                }
-                else
-                {
-                    phaseAngle[1] = phaseAngle[1] - M_PI_2;
-                }
-            }
-#else
-            phaseAngle[1] = 0;
-            amplitude[1] = 0;
-#endif
-            for (i = 2; i < 5; ++i)
-            {
-                cosAccumulatorFloat[i] = (double)cosAccumulator[i];
-                sinAccumulatorFloat[i] = (double)sinAccumulator[i];
-                phaseAngle[i] = atan2(sinAccumulatorFloat[i], cosAccumulatorFloat[i]);
-                if (fabs(cosAccumulatorFloat[i]) > fabs(sinAccumulatorFloat[i]))
-                {
-                    amplitude[i] = cosAccumulatorFloat[i] / (1.07374182e9 * cos(phaseAngle[i]) * measurementTime);
-                }
-                else
-                {
-                    amplitude[i] = sinAccumulatorFloat[i] / (1.07374182e9 * sin(phaseAngle[i]) * measurementTime);
-                }
-                if(amplitude[i] < 0)//make sure amplitude is positive
-                {
-                    amplitude[i] = fabsf(amplitude[i]);
-                    if (phaseAngle[i] < 0)
-                    {
-                        phaseAngle[i] = phaseAngle[i] + M_PI_2;
-                    }
-                    else
-                    {
-                        phaseAngle[i] = phaseAngle[i] - M_PI_2;
-                    }
-                }
-            }
-            //transmit results
-            transmitResults(sensorAddress, phaseAngle, amplitude, bridgeADCClipFlag, coilADCClipFlag, bridgeDigitalClipFlag);
+            void spawnVectorCalcThread(150, sensorIndex, cosAccumulator, sinAccumulator, bridgeADCClip, coilADCClip, bridgeDigitalClip, local_f1PlusF2OutOfRange);
 
             ++sensorIndex;
-            if (sensorIndex == numberOfSensors)
-            {
+            if (sensorIndex >= numberOfSensors) {
+
+                /*
+                 * must test >= in case numberOfSensors was updated since
+                 * the last iteration of this FSM
+                 */
                 sensorIndex = 0;
             }
             local_state = START_NEW_MEASUREMENT_CYCLE;
-            IEC3bits.DCIIE = 1;//re-enable the DCI interrupt
             break;
         }
         default:
@@ -261,7 +207,7 @@ void measurementFSM(void)
 
 }
 
-_Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClipFlag)
+_Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
 {
 
 #ifdef SIMULATION_MODE
@@ -281,7 +227,7 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClipFlag)
         clipTest = RXBUF0 & maskForTruncationBitsPlusOne;
         if (clipTest != 0x0000 && clipTest != maskForTruncationBitsPlusOne)
         {
-            *bridgeDigitalClipFlag = true;
+            *bridgeDigitalClip = true;
             if ((int16_t)RXBUF0 < 0)
             {
                 return 0x8000;//interpret the clipped sample as the most negative value

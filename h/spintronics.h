@@ -147,7 +147,9 @@
 
 //signal generator state encoding
 #define RESET_SIGNAL_GEN 0
-#define RUN_SIGNAL_GEN 1
+#define RESET_BRIDGE_GEN 1
+#define RUN_SIGNAL_GEN 2
+
 
 //message type received from GUI
 #define StartCommand 0x00
