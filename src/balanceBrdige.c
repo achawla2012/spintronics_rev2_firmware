@@ -64,7 +64,13 @@ void balanceBridgeFSM(void)
     bool a1_match = true;
     bool f1_match = true;
 
+    //START_ATOMIC() called from calling ISR
     local_state = global_state;
+    /*
+     * clear the global state register so we can tell
+     * when another request comes in via UART
+     */
+    global_state = 0;
     END_ATOMIC();//end critical section
 
     switch (local_state)
@@ -515,19 +521,16 @@ void balanceBridgeFSM(void)
 
     }
 
-    START_ATOMIC();
-    if (   global_state != IDLE
-        && global_state != START_BRIDGE_BALANCE_FSM
-        && global_state != START_MEASUREMENT_FSM) {
-
+    START_ATOMIC();//begin critical section; must be atomic!
+    if (!global_state) {
         /*
-         * if we hit here, we're assured that no messages from UART should
-         * override our next state
+         * global_state register is clear; no pending requests have arrived over
+         * UART so it's safe to write in our new state
          */
         global_state = local_state;
 
     }
-    END_ATOMIC();
+    END_ATOMIC();//end critical section
 
 }
 

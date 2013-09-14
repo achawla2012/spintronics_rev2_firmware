@@ -198,10 +198,9 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     }
     send(startPayload_confirmToGUI,25);
 
-    START_ATOMIC();
-    IEC3bits.DCIIE = 1;//enable the interrupt to start measurement!
+    START_ATOMIC();//begin critical section; must be atomic!
     global_state = START_MEASUREMENT_FSM;
-    END_ATOMIC();
+    END_ATOMIC();//end critical section
 
 }
 
@@ -927,9 +926,9 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
        }
       if (payload[1] == StopCommand)
        {
-          START_ATOMIC();
+          START_ATOMIC();//begin critical section; must be atomic!
           global_state = IDLE;
-          END_ATOMIC();
+          END_ATOMIC();//end critical section
 
           payload[1] = confirm_StopCommand;
           payload[2] = 0;

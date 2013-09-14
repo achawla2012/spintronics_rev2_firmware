@@ -91,8 +91,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
     
     IFS3bits.DCIIF = 0;
 
-    START_ATOMIC();//must call END_ATOMIC() right away in these functions!
+    START_ATOMIC();//begin critical section; must be atomic!
     state = global_state;
+
+    //must call END_ATOMIC() right away in these functions!
     if (state & BALANCE_BRIDGE_FSM_MASK) {
         balanceBridgeFSM();
     } else {
