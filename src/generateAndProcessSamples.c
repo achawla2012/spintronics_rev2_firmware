@@ -48,6 +48,9 @@ void measurementFSM(void)
     static bool coilADCClipFlag;
     static bool bridgeDigitalClipFlag;
 
+    uint8_t errorCode = 0x00;
+    bool errorFlag = false;
+
     //START_ATOMIC() called from calling ISR
     local_state = global_state;
     /*
@@ -78,9 +81,21 @@ void measurementFSM(void)
 
         case START_MEASUREMENT_FSM:
 
-            sensorIndex = 0;
-            signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
-            local_state = START_NEW_MEASUREMENT_CYCLE;
+            START_ATOMIC();//begin critical section; must be atomic!
+            if (!sensorRBridgeTableValid) {
+                errorFlag = true;
+                errorCode = ATTEMPT_MEASURE_WITHOUT_BALANCED_BRIDGE;
+            }
+            END_ATOMIC();//end critical section
+
+            if (errorFlag) {
+                transmitError(errorCode);
+                local_state = IDLE;
+            } else {
+                sensorIndex = 0;
+                signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T);
+                local_state = START_NEW_MEASUREMENT_CYCLE;
+            }
             break;
 
         case START_NEW_MEASUREMENT_CYCLE:
