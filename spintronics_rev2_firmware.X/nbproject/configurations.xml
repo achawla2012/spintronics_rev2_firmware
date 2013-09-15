@@ -14,6 +14,7 @@
       <itemPath>../h/spiTx.h</itemPath>
       <itemPath>../h/digiPotDrv.h</itemPath>
       <itemPath>../h/balanceBridge.h</itemPath>
+      <itemPath>../h/calculateVectors.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -34,8 +35,10 @@
       <itemPath>../src/uartDrv.c</itemPath>
       <itemPath>../src/spiTx.c</itemPath>
       <itemPath>../src/digiPotDrv.c</itemPath>
-      <itemPath>../src/balanceBrdige.c</itemPath>
       <itemPath>../src/utility.c</itemPath>
+      <itemPath>../src/timerDrv.c</itemPath>
+      <itemPath>../src/calculateVectors.c</itemPath>
+      <itemPath>../src/balanceBridge.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

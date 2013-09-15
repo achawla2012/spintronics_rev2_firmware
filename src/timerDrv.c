@@ -11,6 +11,7 @@
 
 #include "p33exxxx.h"
 #include "timer.h"
+#include "spintronics.h"
 #include "calculateVectors.h"
 
 void timerInit(void)
@@ -27,7 +28,7 @@ void timerInit(void)
     IEC0bits.T1IE = 1; // Enable Timer1 interrupt
 }
 
-void __attribute__((__interrupt__)) _T1Interrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;
     T1CONbits.TON = 0;

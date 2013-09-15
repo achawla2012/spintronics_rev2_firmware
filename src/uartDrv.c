@@ -199,7 +199,30 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     send(startPayload_confirmToGUI,25);
 
     START_ATOMIC();//begin critical section; must be atomic!
-    global_state = START_MEASUREMENT_FSM;
+
+    if (MEASUREMENT_FSM_MASK & global_state) {
+    
+        switch(global_state) {
+            case INIT_RAMP_DOWN_COIL_QUIT:
+                global_state = INIT_RAMP_DOWN_COIL_RESTART;
+                break;
+
+            case RAMP_DOWN_COIL_QUIT:
+                global_state = RAMP_DOWN_COIL_RESTART;
+                break;
+
+            case INIT_RAMP_DOWN_COIL_RESTART:
+            case RAMP_DOWN_COIL_RESTART:
+                break;
+            default:
+                global_state = INIT_RAMP_DOWN_COIL_RESTART;
+                break;
+        }
+
+    } else {
+        global_state = START_MEASUREMENT_FSM;
+    }
+
     END_ATOMIC();//end critical section
 
 }
@@ -263,7 +286,7 @@ void uart_Init (void)
     fdiff = 0;
     fsum = 0;
     bridgeADCGainFactor = 1;
-    f1PlusF2OutOfRangeFlag = false;
+    f1PlusF2OutOfRange = false;
     a1 = 0x7FFF;
     a2 = 0x7FFF;
     numberOfSensors = 1;
@@ -462,8 +485,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
   
     if(U2STAbits.OERR == 1) //check for overflow of the U1RXREG buffer
     {
-        //TODO: delete this packet if overflow error is discovered?  we should
-        //probably find a way to flag this packet is invalid
+        //TODO: perhaps delete this packet if overflow error is discovered?  we should
+        //probably find a way to flag this packet as invalid
         U2STAbits.OERR = 0;
     }
 
@@ -505,7 +528,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
     btTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
 }
 
-void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag)
+void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip)
 {
     uint8_t txbuffer[45],i;
 
@@ -522,27 +545,22 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
     float_to_bytes(phaseAngle[2], &txbuffer[24]);
     float_to_bytes(amplitude[3], &txbuffer[28]);
     float_to_bytes(phaseAngle[3], &txbuffer[32]);
-#endif
     float_to_bytes(amplitude[4], &txbuffer[36]);
     float_to_bytes(phaseAngle[4], &txbuffer[40]);
 
     txbuffer[44] =0;
-    for (i = 1; i < 44; i++)
-    {
+    for (i = 1; i < 44; i++) {
         txbuffer[44] = txbuffer[44] ^ txbuffer[i];
     }
     send (txbuffer, 45);
 
-    if (bridgeADCClipFlag)
-    {
+    if (bridgeADCClip) {
         transmitError(BRIDGE_ADC_CLIP);
     }
-    if (coilADCClipFlag)
-    {
+    if (coilADCClip) {
         transmitError(COIL_ADC_CLIP);
     }
-    if (bridgeDigitalClipFlag)
-    {
+    if (bridgeDigitalClip) {
         transmitError(BRIDGE_DIGITAL_CLIP);
     }
 }
@@ -724,7 +742,7 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
 void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
 {
     uint8_t i, payload[130]={0}, xor_byte =0;
-    for(i=0; i<sizeOfPayload; i++)
+    for(i = 0; i < sizeOfPayload; i++)
     {
         if (rxPointer == 1024)
         {
@@ -733,7 +751,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
         payload[i] = array[rxPointer];
         ++rxPointer;
     }
-    for (i=1; i<(sizeOfPayload - 1); i++)
+    for (i = 1; i < (sizeOfPayload - 1); i++)
     {
         xor_byte = xor_byte ^ payload[i];
     }

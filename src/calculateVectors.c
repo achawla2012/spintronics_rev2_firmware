@@ -1,3 +1,15 @@
+/*
+ * calculateVectors.c
+ *
+ * Author: Michael Reinhart Sandstedt
+ *
+ * First release: September 14th, 2013
+ *
+ * questions or support:
+ * michael.sandstedt@gmail.com
+ */
+
+#include "p33exxxx.h"
 #include "spintronics.h"
 #include "uartDrv.h"
 
@@ -12,8 +24,9 @@ static int64_t sinAccumulatorCapture[5];
 static bool bridgeADCClipCapture;
 static bool coilADCClipCapture;
 static bool bridgeDigitalClipCapture;
+static bool f1PlusF2OutOfRangeCapture;
 
-void spawnVectorCalcThread(uint16_t delayCycles, uint8_t sensorIndex, uint64_t *cosAccumulator, uint64_t *sinAccumulator, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip)
+void spawnVectorCalcThread(uint16_t delayCycles, uint8_t sensorIndex, uint64_t *cosAccumulator, uint64_t *sinAccumulator, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip, bool f1PlusF2OutOfRange)
 {
     uint8_t i;
 
@@ -27,6 +40,7 @@ void spawnVectorCalcThread(uint16_t delayCycles, uint8_t sensorIndex, uint64_t *
     bridgeADCClipCapture = bridgeADCClip;
     coilADCClipCapture = coilADCClip;
     bridgeDigitalClipCapture = bridgeDigitalClip;
+    f1PlusF2OutOfRangeCapture = f1PlusF2OutOfRange;
     END_ATOMIC();//end critical section
 
     //start the timer
@@ -60,10 +74,9 @@ void calculateFinalVectors(void)
     localBridgeADCClip = bridgeADCClipCapture;
     localCoilADCClip = coilADCClipCapture;
     localBridgeDigitalClip = bridgeDigitalClipCapture;
+    localF1PlusF2OutOfRange = f1PlusF2OutOfRangeCapture;
     END_ATOMIC();//end critical section
 
-    //magic number: divide by 1.07374182e9
-    
     for (i = 0; i < 5; ++i) {
 
         #ifndef MEASURE_F2_AT_BRIDGE
@@ -95,20 +108,20 @@ void calculateFinalVectors(void)
     {
         case 0:
 
-            amplitude[0] = amplitude[0] * BIDGE_ADC_SCALE_FACTOR;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BIDGE_ADC_SCALE_FACTOR;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR;
             #endif
 
-            amplitude[2] = amplitude[2] * BIDGE_ADC_SCALE_FACTOR;
-            if (f1PlusF2OutOfRangeFlag)
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR;
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BIDGE_ADC_SCALE_FACTOR;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR;
             }
             break;
 
@@ -122,7 +135,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_2;
-            if (f1PlusF2OutOfRangeFlag)
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
@@ -142,7 +155,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_4;
-            if (f1PlusF2OutOfRangeFlag)
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
@@ -162,7 +175,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_8;
-            if (f1PlusF2OutOfRangeFlag)
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
@@ -182,7 +195,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_16;
-            if (f1PlusF2OutOfRangeFlag)
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
@@ -202,7 +215,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR;
-            if (f1PlusF2OutOfRangeFlag)
+            if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
@@ -216,8 +229,11 @@ void calculateFinalVectors(void)
 
     amplitude[4] = amplitude[4] * COIL_ADC_SCALE_FACTOR;
 
+    for (i = 0; i < 5; ++ i) {
+        phaseAngle32[i] = phaseAngle[i];
+    }
 
     //transmit results
-    transmitResults(localSensorAddress, phaseAngle, amplitude, localBridgeADCClip, localCoilADCClip, localBridgeDigitalClip);
+    transmitResults(localSensorAddress, phaseAngle32, amplitude, localBridgeADCClip, localCoilADCClip, localBridgeDigitalClip);
 
 }
