@@ -11,6 +11,8 @@
  * michael.sandstedt@gmail.com
  */
 
+//TODO: cleanup uartDrv.c; is everything "thread-safe"?
+
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
@@ -25,6 +27,7 @@
 #define UART_RX_BUF_SZ 512
 
 #define FTDI_RST_BAR PORTFbits.RF5
+#define USB_5V_DETECT PORTBbits.RB12
 
 //function prototypes
 static float setVolume(uint8_t channel, float voltage);
@@ -202,30 +205,7 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     send(startPayload_confirmToGUI,25);
 
     START_ATOMIC();//begin critical section; must be atomic!
-
-    if (MEASUREMENT_FSM_MASK & global_state) {
-    
-        switch(global_state) {
-            case INIT_RAMP_DOWN_COIL_QUIT:
-                global_state = INIT_RAMP_DOWN_COIL_RESTART;
-                break;
-
-            case RAMP_DOWN_COIL_QUIT:
-                global_state = RAMP_DOWN_COIL_RESTART;
-                break;
-
-            case INIT_RAMP_DOWN_COIL_RESTART:
-            case RAMP_DOWN_COIL_RESTART:
-                break;
-            default:
-                global_state = INIT_RAMP_DOWN_COIL_RESTART;
-                break;
-        }
-
-    } else {
-        global_state = START_MEASUREMENT_FSM;
-    }
-
+    global_state = RAMP_DOWN_COIL_RESTART;
     END_ATOMIC();//end critical section
 
 }
@@ -426,7 +406,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
     static uint8_t RxBuffer[UART_RX_BUF_SZ] ={0};
 
     IFS0bits.U1RXIF = 0;
-    if(0 == PORTBbits.RB12)
+    if(0 == USB_5V_DETECT)
     {
         U1STAbits.OERR = 0;//clear overflow error flag
         junk = U1RXREG;//clear the input buffer
@@ -477,7 +457,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 
     IFS1bits.U2RXIF = 0;
 
-    if(1 == PORTBbits.RB12)
+    if(1 == USB_5V_DETECT)
     {
         U2STAbits.OERR = 0;//clear overflow error flag
         junk = U2RXREG;//clear the input buffer
@@ -747,7 +727,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
     uint8_t i, payload[130]={0}, xor_byte =0;
     for(i = 0; i < sizeOfPayload; i++)
     {
-        if (rxPointer == 1024)
+        if (rxPointer == UART_RX_BUF_SZ)
         {
             rxPointer = 0;
         }
@@ -771,7 +751,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
       if (payload[1] == StopCommand)
        {
           START_ATOMIC();//begin critical section; must be atomic!
-          global_state = IDLE;
+          global_state = RAMP_DOWN_COIL_QUIT;
           END_ATOMIC();//end critical section
 
           payload[1] = confirm_StopCommand;
@@ -800,7 +780,7 @@ void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
             END_ATOMIC();//end critical section
 
             payload[1] = confirm_MuxAddressing;
-            payload[2] =0;
+            payload[2] = 0;
             payload[3] = payload[1] ^ payload[2];
             send(payload, 4);
         }

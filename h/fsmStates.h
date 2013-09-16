@@ -38,10 +38,8 @@
 #define START_SIGNAL_GEN                        0x85
 #define	MEASURE                                 0x86
 #define	CALCULATE_VECTORS                       0x87
-#define INIT_RAMP_DOWN_COIL_QUIT                0x88
-#define RAMP_DOWN_COIL_QUIT                     0x89
-#define INIT_RAMP_DOWN_COIL_RESTART             0x8A
-#define RAMP_DOWN_COIL_RESTART                  0x8B
+#define RAMP_DOWN_COIL_QUIT                     0x88
+#define RAMP_DOWN_COIL_RESTART                  0x89
 
 //signal generator state encoding
 #define RESET_SIGNAL_GEN 0
