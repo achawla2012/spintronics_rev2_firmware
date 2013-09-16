@@ -38,8 +38,7 @@ void measurementFSM(void)
     volatile _Q15 bridgeSample;
     volatile _Q15 coilSample;
 
-    uint8_t errorCode = 0x00;
-    bool errorFlag = false;
+    bool balanceBridgeFirst = false;
 
     static uint8_t sensorAddress;
     static uint32_t timer;
@@ -118,12 +117,24 @@ void measurementFSM(void)
             break;
 
 
+        case RAMP_DOWN_COIL_BALANCE_BRIDGE:
+
+            if (current_a2 != 0) {
+                --current_a2;
+            }
+            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
+            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            if (0 == current_a2) {
+                local_state = START_BRIDGE_BALANCE_FSM;
+            }
+            break;
+
+
         case START_MEASUREMENT_FSM:
 
             START_ATOMIC();//begin critical section; must be atomic!
             if (!sensorRBridgeTableValid) {
-                errorFlag = true;
-                errorCode = ATTEMPT_MEASURE_WITHOUT_BALANCED_BRIDGE;
+                balanceBridgeFirst = true;
             }
 
             /*
@@ -132,7 +143,6 @@ void measurementFSM(void)
              */
             local_f2 = f2;
             local_a2 = a2;
-            current_a2 = 0;
 
             /*
              * f1PlusF2OutOfRange TBD at time START command is issued;
@@ -143,13 +153,15 @@ void measurementFSM(void)
             local_f1PlusF2OutOfRange = f1PlusF2OutOfRange;
             END_ATOMIC();//end critical section
 
-            if (errorFlag) {
-                transmitError(errorCode);
-                local_state = IDLE;
+            if (balanceBridgeFirst) {
+
+                local_state = START_BRIDGE_BALANCE_FSM | START_MEASUREMENT_AFTER_BALANCE_MASK;
+
             } else {
                 sensorIndex = 0;
                 signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-                local_state = START_NEW_MEASUREMENT_CYCLE;
+                local_state = RAMP_UP_COIL;
+                current_a2 = 0;
             }
             break;
 
@@ -225,6 +237,7 @@ void measurementFSM(void)
             }
             break;
 
+
         case CALCULATE_VECTORS:
         {
             signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
@@ -244,6 +257,8 @@ void measurementFSM(void)
             local_state = START_NEW_MEASUREMENT_CYCLE;
             break;
         }
+
+
         default:
             local_state = IDLE;
             break;

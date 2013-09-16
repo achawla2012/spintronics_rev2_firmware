@@ -45,27 +45,34 @@
 #define SAMPLE_RATE 48000 //units are samples per second
 #define HALF_SAMPLE_RATE 24000 //units are samples per second
 #define TWICE_SAMPLE_PERIOD 41.6666666e-6 //units are seconds
+#define MAX_OUTPUT_FREQUENCY 21600.0 //0.9 * HALF_SAMPLE_RATE //units are samples per second
+#define DEFAULT_BALANCE_FREQUENCY 1365 //units are Q15 half-cycles per sample-period //corresponds to ~1000.0Hz //DEFAULT_BALANCE_FREQUENCY = TWICE_SAMPLE_PERIOD * 1000.0 * 32768
 #endif
 
 #ifdef THIRTY_EIGHT_POINT_FOUR_KHZ
 #define SAMPLE_RATE 38400 //units are samples per second
 #define HALF_SAMPLE_RATE 19200 //units are samples per second
 #define TWICE_SAMPLE_PERIOD 52.0833333e-6 //units are seconds
+#define MAX_OUTPUT_FREQUENCY 17280.0 //0.9 * HALF_SAMPLE_RATE //units are samples per second
+#define DEFAULT_BALANCE_FREQUENCY 1707 //units are Q15 half-cycles per sample-period //corresponds to ~1000.0Hz //DEFAULT_BALANCE_FREQUENCY = TWICE_SAMPLE_PERIOD * 1000.0 * 32768
 #endif
 
 #ifdef THIRTY_TWO_KHZ
 #define SAMPLE_RATE 32000 //units are samples per second
 #define HALF_SAMPLE_RATE 16000 //units are samples per second
 #define TWICE_SAMPLE_PERIOD 62.5e-6 //units are seconds
+#define MAX_OUTPUT_FREQUENCY 14400.0 //0.9 * HALF_SAMPLE_RATE //units are samples per second
+#define DEFAULT_BALANCE_FREQUENCY 2048 //units are Q15 half-cycles per sample-period //corresponds to ~1000.0Hz //DEFAULT_BALANCE_FREQUENCY = TWICE_SAMPLE_PERIOD * 1000.0 * 32768
 #endif
 
 #ifdef TWENTY_FOUR_KHZ
 #define SAMPLE_RATE 24000 //units are samples per second
 #define HALF_SAMPLE_RATE 12000 //units are samples per second
 #define TWICE_SAMPLE_PERIOD 83.3333333e-6 //units are seconds
+#define MAX_OUTPUT_FREQUENCY 10800.0 //0.9 * HALF_SAMPLE_RATE //units are samples per second
+#define DEFAULT_BALANCE_FREQUENCY 2731 //units are Q15 half-cycles per sample-period //corresponds to ~1000.0Hz //DEFAULT_BALANCE_FREQUENCY = TWICE_SAMPLE_PERIOD * 1000.0 * 32768
 #endif
 
-#define MAX_OUTPUT_FREQUENCY 0.9 * HALF_SAMPLE_RATE //units are samples per second
 #define PROCESSOR_CYCLES_PER_SECOND 70000000
 #define PROCESSOR_CYCLES_PER_MS 70000
 #define PROCESSOR_CYCLES_PER_US 70
@@ -89,4 +96,4 @@
 #define ADCDAC_GROUP_DELAY 26//units are samples//Note that pointer and pointerPlusOne in generateAndProcessSamples.c/ShiftRegister are uint8_t, so max ADCDAC_GROUP_DELAY is 254
 
 #define MAX_MEASUREMENT_SAMPLES 0x7FFF0000//the counters that keep track of this are uint32_t; must be strictly less than 0x8000000 to avoid ambiguity when casting to int32_t
-#define MIN_MEASUREMENT_SAMPLES 1000//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD
+#define MIN_MEASUREMENT_SAMPLES 3840//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD

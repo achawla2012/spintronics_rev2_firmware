@@ -20,11 +20,14 @@
 #include "uartDrv.h"
 #include "commsDefines.h"
 #include "unitConversion.h"
+#include "balanceBridge.h"
+#include "uartDrv.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//this is the bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
 #define BT_TX_BUF_SIZE 256
-#define UART_RX_BUF_SZ 512
+#define USB_RX_BUF_SZ 512
+#define BT_RX_BUF_SZ 512
 
 #define FTDI_RST_BAR PORTFbits.RF5
 #define USB_5V_DETECT PORTBbits.RB12
@@ -32,13 +35,14 @@
 //function prototypes
 static float setVolume(uint8_t channel, float voltage);
 static void send(uint8_t* array, uint8_t numBytes);
-static void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload);
+static void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload);
 static void float_to_bytes(float myFloat, uint8_t *array);
-static void decodeStartCommand(uint8_t startpayload[]);
+static void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[]);
 static void usbTxWorker(void);
 static void btTxWorker(void);
 static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
+static void decodeBalanceBridgeCommand(uint8_t *payload);
 
 //global variables
 uint8_t global_state = IDLE;
@@ -47,16 +51,15 @@ _Q15 f1;//units are Q15 half-cycles per sample-period
 _Q15 f2;//units are Q15 half-cycles per sample-period
 _Q15 fdiff;//units are Q15 half-cycles per sample-period
 _Q15 fsum;//units are Q15 half-cycles per sample-period
-_Q15 a1;
-_Q15 a2;
-uint8_t sensorAddressTable[256];
+_Q15 a1;//units are Q15 franctions of DAC full-scale
+_Q15 a2;//units are Q15 fractions of DAC full-scale
+uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
 uint8_t numberOfSensors;
 uint8_t bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
 bool f1PlusF2OutOfRange;
+_Q15 bridge_balance_amplitude;
+_Q15 bridge_balance_frequency;
 
-//static variables
-static uint8_t numBytesInPayload=0, findEndOfPayload=0;
-static bool USBMode;
 static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static uint8_t btTxBuf [BT_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static int16_t usbTxCur, usbTxEnd, btTxCur, btTxEnd;//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY//keep it singed so my head doesn't hurt!
@@ -64,40 +67,48 @@ static float implementedF1, implementedF2, implementedFSum, implementedFDiff;
 
 void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISpecifiedA2, float GUISpecifiedF2, float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor)
 {
-    float implementedA1, implementedA2, implementedT, maxOutputFrequency, maxMeasurementSamples, minMeasurementSamples;
+    float implementedA1, implementedA2, implementedT, maxMeasurementSamples, minMeasurementSamples;
     uint8_t implementedBridgeGainFactor, startPayload_confirmToGUI[25], i;
     float tempTime;
 
     implementedA1 = setVolume(0, GUISpecifiedA1);
     implementedA2 = setVolume(1, GUISpecifiedA2);
 
-    maxOutputFrequency = MAX_OUTPUT_FREQUENCY;
     maxMeasurementSamples = MAX_MEASUREMENT_SAMPLES;
     minMeasurementSamples = MIN_MEASUREMENT_SAMPLES;
 
-    if (GUISpecifiedF1 > maxOutputFrequency)
+    if (GUISpecifiedF1 > MAX_OUTPUT_FREQUENCY)
     {
         transmitError(F1_OUT_OF_RANGE);
-        f1 = _Q15ftoi(maxOutputFrequency * TWICE_SAMPLE_PERIOD);
-        implementedF1 = maxOutputFrequency;
+        f1 = _Q15ftoi(MAX_OUTPUT_FREQUENCY * TWICE_SAMPLE_PERIOD);
+        implementedF1 = MAX_OUTPUT_FREQUENCY;
+        bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
+
     }
     else if (GUISpecifiedF1 < 0)
     {
         transmitError(F1_OUT_OF_RANGE);
         f1 = 0;
         implementedF1 = 0.0;
+        bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
     }
     else
     {
         f1 = _Q15ftoi(GUISpecifiedF1 * TWICE_SAMPLE_PERIOD);
         implementedF1 = _itofQ15(f1) * HALF_SAMPLE_RATE;
+        bridge_balance_frequency = f1;
     }
 
-    if (GUISpecifiedF2 > maxOutputFrequency)
+    if (GUISpecifiedF2 > MAX_OUTPUT_FREQUENCY)
     {
         transmitError(F2_OUT_OF_RANGE);
-        f2 = _Q15ftoi(maxOutputFrequency * TWICE_SAMPLE_PERIOD);
-        implementedF2 = maxOutputFrequency;
+        f2 = _Q15ftoi(MAX_OUTPUT_FREQUENCY * TWICE_SAMPLE_PERIOD);
+        /*
+         * truncate the lowest 3 bits so that the coil tone hits 0rad at least
+         * every 2 ^ 16 / 2 ^3 = 8192 samples
+         */
+        f2 &= 0xFFF8;
+        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
     }
     else if (GUISpecifiedF2 < 0)
     {
@@ -108,11 +119,17 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     else
     {
         f2 = _Q15ftoi(GUISpecifiedF2 * TWICE_SAMPLE_PERIOD);
+        
+        /*
+         * truncate the lowest 3 bits so that the coil tone hits 0rad at least
+         * every 2 ^ 16 / 2 ^3 = 8192 samples
+         */
+        f2 &= 0xFFF8;
         implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
     }
 
     f1PlusF2OutOfRange = false;
-    if (GUISpecifiedF1 + GUISpecifiedF2 > maxOutputFrequency)
+    if (GUISpecifiedF1 + GUISpecifiedF2 > MAX_OUTPUT_FREQUENCY)
     {
         f1PlusF2OutOfRange = true;
         transmitError(F1_PLUS_F2_OUT_OF_RANGE);
@@ -188,7 +205,7 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     }
 
     startPayload_confirmToGUI[0] = 0xFE;
-    startPayload_confirmToGUI[1] = confirm_StartCommand;
+    startPayload_confirmToGUI[1] = CONFIRM_START_COMMAND;
     startPayload_confirmToGUI[2] = 0x15;
     float_to_bytes(implementedA1, &startPayload_confirmToGUI[3]);
     float_to_bytes(implementedF1, &startPayload_confirmToGUI[7]);
@@ -214,40 +231,32 @@ float setVolume(uint8_t channel, float voltage)
 {
     if (channel == 0x00)
     {
-        if (voltage > FULLSCALE_BRIDGE_DAC_VOLTAGE)
-        {
+        if (voltage > FULLSCALE_BRIDGE_DAC_VOLTAGE) {
             transmitError(A1_OUT_OF_RANGE);
             a1 = 0x7FFF;
             voltage = FULLSCALE_BRIDGE_DAC_VOLTAGE;
-        }
-        else if (voltage < 0.0)
-        {
+            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+
+        } else if (voltage < 0.0) {
             transmitError(A1_OUT_OF_RANGE);
             a1 = 0x0000;
             voltage = 0.0;
-        }
-        else
-        {
+            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+        } else {
             a1 = _Q15ftoi(voltage / FULLSCALE_BRIDGE_DAC_VOLTAGE);
             voltage = _itofQ15(a1) * FULLSCALE_BRIDGE_DAC_VOLTAGE;
+            bridge_balance_amplitude = a1;//set in case we need to balance the bridge
         }
-    }
-    else
-    {
-        if (voltage > FULLSCALE_COIL_DAC_VOLTAGE)
-        {
+    } else {
+        if (voltage > FULLSCALE_COIL_DAC_VOLTAGE) {
             transmitError(A2_OUT_OF_RANGE);
             a2 = 0x7FFF;
             voltage = FULLSCALE_COIL_DAC_VOLTAGE;
-        }
-        else if (voltage < 0.0)
-        {
+        } else if (voltage < 0.0) {
             transmitError(A2_OUT_OF_RANGE);
             a2 = 0x0000;
             voltage = 0.0;
-        }
-        else
-        {
+        } else {
             a2 = _Q15ftoi(voltage / FULLSCALE_COIL_DAC_VOLTAGE);
             voltage = _itofQ15(a2) * FULLSCALE_COIL_DAC_VOLTAGE;
         }
@@ -401,101 +410,164 @@ void uart_Init (void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 {
+    static uint8_t numBytesInPayload = 0xFF;
+    static uint8_t payloadBytesReceived =  0;
+
     uint8_t junk;
     static uint16_t endDataRxPointer = 0;
-    static uint8_t RxBuffer[UART_RX_BUF_SZ] ={0};
+    static uint8_t USB_RxBuffer[USB_RX_BUF_SZ] ={0};
 
     IFS0bits.U1RXIF = 0;
-    if(0 == USB_5V_DETECT)
+
+    if(0 == USB_5V_DETECT || U1STAbits.OERR == 1)
     {
         U1STAbits.OERR = 0;//clear overflow error flag
         junk = U1RXREG;//clear the input buffer
-        return;//RB12 is low, indicating that USB is not connected; therefore, we should ignore incoming packets from USB
-    }
-    USBMode = true; // USB is connected which changes the endianness of the data stream (endianness is different for bluetooth)
-    RxBuffer[endDataRxPointer] = U1RXREG;
 
-    if(U1STAbits.OERR == 1) //check for overflow of the U1RXREG buffer
-    {
-        //TODO: delete this packet if overflow error is discovered?  we should
-        //probably find a way to flag this packet is invalid
-        U1STAbits.OERR = 0;
+        //clear counters
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
+        /*
+         * Either USB is connected, or an overflow has occurred.
+         * Return after the input buffer and counters are cleared.
+         */
+        return;
     }
 
-    if (RxBuffer[endDataRxPointer] == 0xFE)
-    {
-        findEndOfPayload = 1;
+    USB_RxBuffer[endDataRxPointer] = U1RXREG;
+
+    /*
+     * Try to find the beginning of a payload;
+     * Update payloadBytesReceived
+     */
+
+    if (payloadBytesReceived == 0 && USB_RxBuffer[endDataRxPointer] == 0xFE) {
+
+        payloadBytesReceived = 1;
+
+    } else if (payloadBytesReceived == 0xFF) {
+
+        /*
+         * this is beyond the maximum payload size; reset counters and start
+         * looking for start of frame again
+         */
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
+    } else if (payloadBytesReceived != 0) {
+
+        ++payloadBytesReceived;
+
     }
-    if (findEndOfPayload == 3)
-    {
-       numBytesInPayload =  findEndOfPayload + RxBuffer[endDataRxPointer]+1;
-    }
-    if (findEndOfPayload == numBytesInPayload)
-    {
-        if (numBytesInPayload > (endDataRxPointer + 1))
-        {
-            receive(RxBuffer, endDataRxPointer - numBytesInPayload + UART_RX_BUF_SZ + 1, numBytesInPayload);
+
+    /* payloadBytesReceived is now up to date */
+    if (payloadBytesReceived == 3) {
+
+        numBytesInPayload =  payloadBytesReceived + USB_RxBuffer[endDataRxPointer] + 1;
+
+    } else if (payloadBytesReceived == numBytesInPayload) {
+        
+        if (numBytesInPayload > (endDataRxPointer + 1)) {
+
+            receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + USB_RX_BUF_SZ + 1, numBytesInPayload);
+
+        } else {
+
+            receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+
         }
-        else
-        {
-            receive(RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
-        }
+
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
     }
-    ++findEndOfPayload;
+
     ++endDataRxPointer;
-    if (endDataRxPointer == UART_RX_BUF_SZ)
-    {
+    if (endDataRxPointer == USB_RX_BUF_SZ) {
         endDataRxPointer = 0;
     }
+
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 {
+
+    static uint8_t numBytesInPayload = 0xFF;
+    static uint8_t payloadBytesReceived =  0;
+
     uint8_t junk;
-    static uint16_t endDataRxPointer=0;
-    static uint8_t RxBuffer[UART_RX_BUF_SZ] ={0};
+    static uint16_t endDataRxPointer = 0;
+    static uint8_t BT_RxBuffer[BT_RX_BUF_SZ] ={0};
 
     IFS1bits.U2RXIF = 0;
 
-    if(1 == USB_5V_DETECT)
+    if(1 == USB_5V_DETECT || U2STAbits.OERR == 1)
     {
         U2STAbits.OERR = 0;//clear overflow error flag
         junk = U2RXREG;//clear the input buffer
-        return;//RB12 is high, indicating that USB is connected; therefore, we should ignore incoming packets from bluetooth
-    }
-    USBMode = false; // bluetooth is connected which changes the endianness of the data stream (endianness is different for USB)
-    RxBuffer[endDataRxPointer] = U2RXREG;
-  
-    if(U2STAbits.OERR == 1) //check for overflow of the U1RXREG buffer
-    {
-        //TODO: perhaps delete this packet if overflow error is discovered?  we should
-        //probably find a way to flag this packet as invalid
-        U2STAbits.OERR = 0;
+
+        //clear counters
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
+        /*
+         * Either USB is connected, or an overflow has occurred.
+         * return after the input buffer and counters are cleared.
+         */
+        return;
     }
 
-    if (RxBuffer[endDataRxPointer] == 0xFE)
-    {
-        findEndOfPayload = 1;
+    BT_RxBuffer[endDataRxPointer] = U2RXREG;
+
+    /*
+     * Try to find the beginning of a payload;
+     * Update payloadBytesReceived
+     */
+
+    if (payloadBytesReceived == 0 && BT_RxBuffer[endDataRxPointer] == 0xFE) {
+
+        payloadBytesReceived = 1;
+
+    } else if (payloadBytesReceived == 0xFF) {
+
+        /*
+         * this is beyond the maximum payload size; reset counters and start
+         * looking for start of frame again
+         */
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
+    } else if (payloadBytesReceived != 0) {
+
+        ++payloadBytesReceived;
+
     }
-    if (findEndOfPayload == 3)
-    {
-       numBytesInPayload =  findEndOfPayload + RxBuffer[endDataRxPointer]+1;
-    }
-    if (findEndOfPayload == numBytesInPayload)
-    {
-        if (numBytesInPayload > (endDataRxPointer + 1))
-        {
-            receive(RxBuffer, endDataRxPointer - numBytesInPayload + UART_RX_BUF_SZ + 1,numBytesInPayload );
+
+    /* payloadBytesReceived is now up to date */
+    if (payloadBytesReceived == 3) {
+
+        numBytesInPayload =  payloadBytesReceived + BT_RxBuffer[endDataRxPointer] + 1;
+
+    } else if (payloadBytesReceived == numBytesInPayload) {
+
+        if (numBytesInPayload > (endDataRxPointer + 1)) {
+
+            receive(true, BT_RxBuffer, endDataRxPointer - numBytesInPayload + BT_RX_BUF_SZ + 1, numBytesInPayload);
+
+        } else {
+
+            receive(true, BT_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+
         }
-        else
-        {
-            receive(RxBuffer, endDataRxPointer - numBytesInPayload + 1,numBytesInPayload );
-        }
+
+        payloadBytesReceived = 0;
+        numBytesInPayload = 0xFF;
+
     }
-    ++findEndOfPayload;
+
     ++endDataRxPointer;
-    if (endDataRxPointer == UART_RX_BUF_SZ)
-    {
+    if (endDataRxPointer == BT_RX_BUF_SZ) {
         endDataRxPointer = 0;
     }
 
@@ -516,7 +588,7 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
     uint8_t txbuffer[45],i;
 
     txbuffer[0] = 0xFE;
-    txbuffer[1] = 0x82;
+    txbuffer[1] = REPORT_VALUES;
     txbuffer[2] = 0x29;
     txbuffer[3] = sensor;
 
@@ -551,7 +623,11 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
 void float_to_bytes(float myFloat, uint8_t *array)
 {
     /* endianness of data stream is different for USB and bluetooth*/
-    if (USBMode == true)
+    /*
+     * TODO: this is ridiculous.  no, endianness is not different; the mobile
+     * GUI is screwed up.
+     */
+    if (USB_5V_DETECT)
     {
     *array = *((__eds__ uint8_t*)&myFloat);
     ++array;
@@ -577,7 +653,7 @@ void transmitError(uint8_t errorCode)
 {
     static uint8_t errorpayload[5];
     errorpayload[0]= 0xFE;
-    errorpayload[1] = 0x83;
+    errorpayload[1] = REPORT_ERROR;
     errorpayload[2] = 0x01;
     errorpayload[3] = errorCode;
     errorpayload[4] = errorpayload[1] ^ errorpayload[2] ^ errorpayload[3];
@@ -722,156 +798,288 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
     return spawnTxThread;
 }
 
-void receive (uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
+void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
 {
-    uint8_t i, payload[130]={0}, xor_byte =0;
-    for(i = 0; i < sizeOfPayload; i++)
-    {
-        if (rxPointer == UART_RX_BUF_SZ)
-        {
+    uint16_t rx_buf_sz;
+    uint8_t i, payload[MAX_RX_PAYLOAD_SIZE] = {0}, xor_byte = 0;
+
+    if (rxFromUSB) {
+        rx_buf_sz == USB_RX_BUF_SZ;
+    } else {
+        rx_buf_sz == BT_RX_BUF_SZ;
+    }
+
+    for(i = 0; i < sizeOfPayload; i++) {
+        if (rxPointer == rx_buf_sz) {
             rxPointer = 0;
         }
         payload[i] = array[rxPointer];
         ++rxPointer;
     }
-    for (i = 1; i < (sizeOfPayload - 1); i++)
-    {
+
+    //check XOR
+    for (i = 1; i < (sizeOfPayload - 1); i++) {
+
         xor_byte = xor_byte ^ payload[i];
-    }
-    if (xor_byte != payload[i])
-    {
+
+    } if (xor_byte != payload[i]) {
+
         transmitError(Bad_Packet_XOR);
-    }
-    else
-    {
-      if (payload[1] == StartCommand)
-       {
-         decodeStartCommand(payload);
-       }
-      if (payload[1] == StopCommand)
-       {
-          START_ATOMIC();//begin critical section; must be atomic!
-          global_state = RAMP_DOWN_COIL_QUIT;
-          END_ATOMIC();//end critical section
 
-          payload[1] = confirm_StopCommand;
-          payload[2] = 0;
-          payload[3] = payload[1] ^ payload[2];
-          send(payload, 4);
-       }
-       if (payload[1] == MuxAddressing)
-       {
-            //transmit multiplexer addresses to state machine
-            START_ATOMIC();//begin critical section; must be atomic!
-            numberOfSensors = payload[2];
+    } else {
 
-            if (0 == numberOfSensors)//make sure the sensor address table has at least 1 entry
-            {
-                numberOfSensors = 1;
-                sensorAddressTable[0] = DEFAULT_SENSOR_ADDRESS;
-            }
-            else
-            {
-                for (i=0; i<numberOfSensors; i++)
-                {
-                  sensorAddressTable[i] = payload[3+i];
+        switch (payload[1]) {
+
+            case START_COMMAND:
+
+                decodeStartCommand(rxFromUSB, payload);
+                break;
+
+            case STOP_COMMAND:
+
+                if (payload[2] != 0) {
+
+                    transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
+
+                } else {
+
+                    START_ATOMIC();//begin critical section; must be atomic!
+                    global_state = RAMP_DOWN_COIL_QUIT;
+                    END_ATOMIC();//end critical section
+
+                    payload[1] = CONFIRM_STOP_COMMAND;
+                    payload[2] = 0;
+                    payload[3] = payload[1] ^ payload[2];
+                    send(payload, 4);
                 }
-            }
-            END_ATOMIC();//end critical section
+                break;
 
-            payload[1] = confirm_MuxAddressing;
-            payload[2] = 0;
-            payload[3] = payload[1] ^ payload[2];
-            send(payload, 4);
+            case CONFIG_MUX_ADDRESSING:
+            {
+                uint8_t newNumSensors;
+                bool copyInNewTable = false;
+
+                if(payload[2] > MAX_RX_BYTES_TO_FOLLOW) {
+
+                    transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
+
+                } else {
+
+                    START_ATOMIC();//begin critical section; must be atomic!
+
+                    /*
+                     * check to see if the new table is different than the one
+                     * in memory
+                     */
+                    newNumSensors = payload[2];
+
+                    if (newNumSensors == 0) {
+
+                        numberOfSensors = 1;
+                        sensorAddressTable[0] = DEFAULT_SENSOR_ADDRESS;
+                        sensorRBridgeTableValid = false;
+
+                    } else if (newNumSensors != numberOfSensors) {
+
+                        copyInNewTable = true;
+                        sensorRBridgeTableValid = false;
+
+                    } else {
+
+                        for (i = 0; i < numberOfSensors; i++) {
+
+                            if (sensorAddressTable[i] != payload[3+i]) {
+
+                                copyInNewTable = true;
+                                sensorRBridgeTableValid = false;
+                                break;
+                            }
+
+                        }
+                    }
+
+                    if (copyInNewTable) {
+
+                        numberOfSensors = newNumSensors;
+
+                        for (i = 0; i < numberOfSensors; i++) {
+
+                            sensorAddressTable[i] = payload[3+i];
+
+                        }
+                    }
+                    END_ATOMIC();//end critical section
+
+                    payload[1] = CONFIRM_MUX_ADDRESSING;
+                    payload[2] = 0;
+                    payload[3] = payload[1] ^ payload[2];
+                    send(payload, 4);
+                }
+                break;
+            }
+            case BALANCE_WHEASTONE_BRIDGE:
+
+                decodeBalanceBridgeCommand(payload);
+                break;
+
+            default:
+
+                transmitError(UNRECOGNIZED_COMMAND_RECEIVED);
+                break;
         }
+
     }
 }
 
-void decodeStartCommand(uint8_t startpayload[])
+void decodeBalanceBridgeCommand(uint8_t *payload)
+{
+    float volts, hz;
+    
+    if (payload[2] != 8) {
+
+        transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
+
+    } else {
+
+        sensorRBridgeTableValid = false;
+        *(__eds__ uint8_t *)&volts = payload[3];
+        *((__eds__ uint8_t *)&volts + 1) = payload[4];
+        *((__eds__ uint8_t *)&volts + 2) = payload[5];
+        *((__eds__ uint8_t *)&volts + 3) = payload[6];
+
+        *(__eds__ uint8_t *)&hz = payload[7];
+        *((__eds__ uint8_t *)&hz + 1) = payload[8];
+        *((__eds__ uint8_t *)&hz + 2) = payload[9];
+        *((__eds__ uint8_t *)&hz + 3) = payload[10];
+
+        if (volts > FULLSCALE_BRIDGE_DAC_VOLTAGE || volts < 0.0) {
+
+            transmitError(BRIDGE_BALANCE_VOLTAGE_OUT_OF_RANGE);
+            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;
+
+        } else {
+
+            bridge_balance_amplitude = _Q15ftoi(volts / FULLSCALE_BRIDGE_DAC_VOLTAGE);
+
+        }
+
+        if (hz > MAX_OUTPUT_FREQUENCY || hz < 0) {
+
+            transmitError(BRIDGE_BALANCE_FREQUENCY_OUT_OF_RANGE);
+            bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;
+
+        } else {
+
+            bridge_balance_frequency = _Q15ftoi(hz * TWICE_SAMPLE_PERIOD);
+
+        }
+
+        START_ATOMIC();//begin critical section; must be atomic!
+        global_state = RAMP_DOWN_COIL_BALANCE_BRIDGE;
+        END_ATOMIC();//end critical section
+
+        payload[1] = CONFIRM_BALANCE_BRIDGE;
+        payload[2] = 0;
+        payload[3] = payload[1] ^ payload[2];
+        send(payload, 4);
+
+    }
+
+}
+
+void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
 {
     uint8_t i, k, array[4];
+    float GUISpecifiedA1;
+    float GUISpecifiedF1;
+    float GUISpecifiedA2;
+    float GUISpecifiedF2;
+    float GUISpecifiedT;
+
+    if (21 != startpayload[2]) {
+        transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
+        return;
+    }
+
     /*endianness of data stream is different for USB and bluetooth*/
+    /*
+     * TODO: this is ridiculous.  no, endianness is not different; the mobile
+     * GUI is screwed up.
+     */
     
-    if (USBMode == true)
-    {
-    /* floating point data types begin from startpayload[3], so set k=3 */
-    k=3;
-    for(i=0; i<4; i++)
-    {
-       array[i] = startpayload[k];
-       ++k;
-    }
-    float GUISpecifiedA1 = *(__eds__ float *)&array;
+    if (rxFromUSB) {
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        ++k;
-    }
-    float GUISpecifiedF1 = *(__eds__ float *)&array;
+        /* floating point data types begin from startpayload[3], so set k=3 */
+        k=3;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        ++k;
-    }
-    float GUISpecifiedA2 = *(__eds__ float *)&array;
+        GUISpecifiedA1 = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        ++k;
-    }
-    float GUISpecifiedF2 = *(__eds__ float *)&array;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
+        GUISpecifiedF1 = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        ++k;
-    }
-    float GUISpecifiedT = *(__eds__ float *)&array;
-    processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
-    }
-    else          //bluetooth is connected
-    {
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
+        GUISpecifiedA2 = *(__eds__ float *)&array;
+
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
+        GUISpecifiedF2 = *(__eds__ float *)&array;
+
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
+
+        GUISpecifiedT = *(__eds__ float *)&array;
+
+        processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
+
+    } else {          //bluetooth is connected
     // floating point data types end at startpayload[22], so set k = 22;
 
-    k=22;
-    for(i=0; i<4; i++)
-    {
-       array[i] = startpayload[k];
-       --k;
-    }
-    float GUISpecifiedT = *(__eds__ float *)&array;
+        k=22;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedT = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        --k;
-    }
-    float GUISpecifiedF2 = *(__eds__ float *)&array;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedF2 = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        --k;
-    }
-    float GUISpecifiedA2 = *(__eds__ float *)&array;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedA2 = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        --k;
-    }
-    float GUISpecifiedF1 = *(__eds__ float *)&array;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedF1 = *(__eds__ float *)&array;
 
-    for(i=0; i<4; i++)
-    {
-        array[i] = startpayload[k];
-        --k;
-    }
-    float GUISpecifiedA1 = *(__eds__ float *)&array;
-    processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedA1 = *(__eds__ float *)&array;
+
+        processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
     }
 
 }

@@ -9,14 +9,18 @@
  */
 
 //message type received from GUI
-#define StartCommand 0x00
-#define StopCommand 0x01
-#define MuxAddressing 0x04
+#define START_COMMAND               0x00
+#define STOP_COMMAND                0x01
+#define CONFIG_MUX_ADDRESSING       0x04
+#define BALANCE_WHEASTONE_BRIDGE    0x05
 
-//confirmation message type to GUI
-#define confirm_StartCommand 0x80
-#define confirm_StopCommand 0x81
-#define confirm_MuxAddressing 0x84
+//message type sent to GUI
+#define CONFIRM_START_COMMAND       0x80
+#define CONFIRM_STOP_COMMAND        0x81
+#define REPORT_VALUES               0x82
+#define REPORT_ERROR                0x83
+#define CONFIRM_MUX_ADDRESSING      0x84
+#define CONFIRM_BALANCE_BRIDGE      0x85
 
 //error codes
 #define Bad_Packet_XOR 0x01
@@ -30,7 +34,8 @@
 #define BRIDGE_ADC_CLIP 0x09
 #define COIL_ADC_CLIP 0x0A
 #define BRIDGE_DIGITAL_CLIP 0x0B
-#define BRIDGE_BALANCE_FAILURE 0x0C
-#define A1_CHANGED_DURING_BRIDGE_BALANCE 0x0D
-#define F1_CHANGED_DURING_BRIDGE_BALANCE 0x0E
-#define ATTEMPT_MEASURE_WITHOUT_BALANCED_BRIDGE 0x0F
+#define BRIDGE_BALANCE_VOLTAGE_OUT_OF_RANGE 0x0C
+#define BRIDGE_BALANCE_FREQUENCY_OUT_OF_RANGE 0x0D
+#define BRIDGE_BALANCE_FAILURE 0x0E
+#define RECEIVED_PACKET_WITH_INCORRECT_SIZE 0x0F
+#define UNRECOGNIZED_COMMAND_RECEIVED 0x10

@@ -29,6 +29,13 @@
 #define R_BRIDGE_HI_MID_AMP_MEASURE             0x50
 #define R_BRIDGE_HI_MID_AMP_CALC                0x51
 
+/*
+ * or the state with this in order for balanceBridgeFSM() to continue to
+ * measurementFSM() after the balance routine completes
+ */
+#define START_MEASUREMENT_AFTER_BALANCE_MASK    0x20
+
+
 //states for measurementFSM() must have bit 8 set!
 #define MEASUREMENT_FSM_MASK                    0x80
 #define START_MEASUREMENT_FSM                   0x81
@@ -40,6 +47,7 @@
 #define	CALCULATE_VECTORS                       0x87
 #define RAMP_DOWN_COIL_QUIT                     0x88
 #define RAMP_DOWN_COIL_RESTART                  0x89
+#define RAMP_DOWN_COIL_BALANCE_BRIDGE           0x8A
 
 //signal generator state encoding
 #define RESET_SIGNAL_GEN 0

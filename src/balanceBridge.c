@@ -65,11 +65,11 @@ void balanceBridgeFSM(void)
     static float r_bridge_hi_mid_amplitude;
 
     bool advance_state = false;
-    bool a1_match = true;
-    bool f1_match = true;
+    uint8_t continue_to_measurement;
 
     //START_ATOMIC() called from calling ISR
-    local_state = global_state;
+    continue_to_measurement = global_state & START_MEASUREMENT_AFTER_BALANCE_MASK;
+    local_state = global_state & !START_MEASUREMENT_AFTER_BALANCE_MASK;
     /*
      * clear the global state register so we can tell
      * when another request comes in via UART
@@ -95,8 +95,8 @@ void balanceBridgeFSM(void)
             sensorIndex = 0;
 
             START_ATOMIC;//begin critical section; must be atomic!
-            local_a1 = a1;
-            local_f1 = f1;
+            local_a1 = bridge_balance_amplitude;
+            local_f1 = bridge_balance_frequency;
             END_ATOMIC();//end critical section
 
             IEC3bits.DCIIE = 0;//disable the DCI interrupt in case the divide take longer than one sample period
@@ -132,35 +132,20 @@ void balanceBridgeFSM(void)
             timer = 0;
 
             START_ATOMIC;//begin critical section; must be atomic!
-            if (local_a1 != a1) {
-                a1_match = false;
-            }
-            if (local_f1 != f1) {
-                f1_match = false;
-            }
             sensorAddress = sensorAddressTable[sensorIndex];
             END_ATOMIC();//end critical section
 
-            if (!a1_match) {
-                transmitError(A1_CHANGED_DURING_BRIDGE_BALANCE);
-                local_state = IDLE;
-            } else if (!f1_match) {
-                transmitError(F1_CHANGED_DURING_BRIDGE_BALANCE);
-                local_state = IDLE;
-            } else {
+            configSensor(sensorAddress);
 
-                configSensor(sensorAddress);
-
-                //set r_bridge to initial value
-                setRBridge(R_BRIDGE_MID);
+            //set r_bridge to initial value
+            setRBridge(R_BRIDGE_MID);
             
-                balanceBridgeGenerator(RUN_SIGNAL_GEN, local_a1, local_f1, &cosOmegaT, &sinOmegaT);
+            balanceBridgeGenerator(RUN_SIGNAL_GEN, local_a1, local_f1, &cosOmegaT, &sinOmegaT);
 
-                r_amp_min = R_AMP_MIN;
-                r_amp_max = R_AMP_MAX;
+            r_amp_min = R_AMP_MIN;
+            r_amp_max = R_AMP_MAX;
 
-                local_state = SET_R_AMP_TO_LO_MID;
-            }
+            local_state = SET_R_AMP_TO_LO_MID;
             break;
         }
 
@@ -514,7 +499,13 @@ void balanceBridgeFSM(void)
                      * the last iteration of this FSM
                      */
                     sensorRBridgeTableValid = true;
-                    local_state = START_MEASUREMENT_FSM;
+                    if (continue_to_measurement) {
+                        local_state = START_MEASUREMENT_FSM;
+                        continue_to_measurement = 0;
+                    } else {
+                        local_state = IDLE;
+                    }
+
                 } else {
                     local_state = START_GAIN_CAL;
                 }
@@ -541,7 +532,7 @@ void balanceBridgeFSM(void)
          * global_state register is clear; no pending requests have arrived over
          * UART so it's safe to write in our new state
          */
-        global_state = local_state;
+        global_state = local_state | continue_to_measurement;
 
     }
     END_ATOMIC();//end critical section
