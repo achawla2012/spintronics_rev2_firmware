@@ -10,14 +10,16 @@
  * michael.sandstedt@gmail.com
  */
 
-//////////////////TODO: use local static, not global
-
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
+#include "spintronicsConfig.h"
+#include "fsmStates.h"
 #include "uartDrv.h"
 #include "muxControl.h"
 #include "balanceBridge.h"
 #include "calculateVectors.h"
+#include "commsDefines.h"
+#include "utility.h"
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip);
 static void signalGenerator(unsigned char runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 local_a2, _Q15 local_f2);

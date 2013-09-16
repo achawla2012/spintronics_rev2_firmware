@@ -17,8 +17,6 @@ extern void transmitError(uint8_t errorCode);
 
 //global variables
 extern uint8_t global_state;
-extern bool GUIRequestingRun;
-extern bool resetStateMachine;
 extern uint32_t measurementTime;//units are samples
 extern _Q15 f1;//units are half-cycles per sample-period
 extern _Q15 f2;//units are half-cycles per sample-period

@@ -12,9 +12,12 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
-#include "delay.h"
+#include "spintronicsIncludes.h"
+#include "spintronicsConfig.h"
+#include "fsmStates.h"
 #include "uartDrv.h"
+#include "commsDefines.h"
+#include "unitConversion.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//this is the bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256

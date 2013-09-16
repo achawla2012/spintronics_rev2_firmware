@@ -5,16 +5,21 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>../h/CS4272.h</itemPath>
-      <itemPath>../h/delay.h</itemPath>
       <itemPath>../h/generateAndProcessSamples.h</itemPath>
       <itemPath>../h/i2sDrv.h</itemPath>
       <itemPath>../h/muxControl.h</itemPath>
-      <itemPath>../h/spintronics.h</itemPath>
       <itemPath>../h/uartDrv.h</itemPath>
       <itemPath>../h/spiTx.h</itemPath>
       <itemPath>../h/digiPotDrv.h</itemPath>
       <itemPath>../h/balanceBridge.h</itemPath>
       <itemPath>../h/calculateVectors.h</itemPath>
+      <itemPath>../h/spintronicsIncludes.h</itemPath>
+      <itemPath>../h/fsmStates.h</itemPath>
+      <itemPath>../src/commsDefines.h</itemPath>
+      <itemPath>../h/spintronicsConfig.h</itemPath>
+      <itemPath>../h/utility.h</itemPath>
+      <itemPath>../h/timerDrv.h</itemPath>
+      <itemPath>../h/unitConversion.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -26,7 +31,6 @@
       <itemPath>../src/asm.s</itemPath>
       <itemPath>../src/cosLUT.c</itemPath>
       <itemPath>../src/CS4272config.c</itemPath>
-      <itemPath>../src/delay.c</itemPath>
       <itemPath>../src/generateAndProcessSamples.c</itemPath>
       <itemPath>../src/i2sDrv.c</itemPath>
       <itemPath>../src/main.c</itemPath>

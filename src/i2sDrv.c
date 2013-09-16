@@ -11,7 +11,8 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
+#include "fsmStates.h"
 #include "generateAndProcessSamples.h"
 #include "balanceBridge.h"
 #include "uartDrv.h"

@@ -15,11 +15,13 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
+#include "spintronicsConfig.h"
+#include "timerDrv.h"
+#include "spiTx.h"
 #include "CS4272.h"
 #include "muxControl.h"
 #include "uartDrv.h"
-#include "spiTx.h"
 
 // Select Internal FRC at POR
 _FOSCSEL(FNOSC_FRC & IESO_OFF);                 // OSC2 Pin Function: OSC2 is Clock Output                                                        // Primary Oscillator Mode: Disabled
@@ -48,10 +50,12 @@ int main(void)
 	
     // Disable Watch Dog Timer
     RCONbits.SWDTEN=0;
+
+    //initialize components; order is important; DO NOT CHANGE
+    timerInit();//initialize the timer
     spiInit();// init SPI for controlling digi pots
     cs4272Init();// establish communication with the CS4272
     muxInit();// setup pins to communicate with the multiplexer
-    timerInit();//initialize the timer
     uart_Init();// Init UART for GUI communication
     
 #ifdef SIMULATION_MODE

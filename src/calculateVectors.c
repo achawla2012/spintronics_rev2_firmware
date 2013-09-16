@@ -10,12 +10,13 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
+#include "spintronicsConfig.h"
 #include "uartDrv.h"
+#include "unitConversion.h"
 
 #define M_PI 3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
-
 
 //file-scope global variables
 static uint8_t sensorAddressCapture;
@@ -233,7 +234,6 @@ void calculateFinalVectors(void)
         phaseAngle32[i] = phaseAngle[i];
     }
 
-    //transmit results
     transmitResults(localSensorAddress, phaseAngle32, amplitude, localBridgeADCClip, localCoilADCClip, localBridgeDigitalClip);
 
 }

@@ -10,7 +10,7 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
 #include "spiTx.h"
 
 /*

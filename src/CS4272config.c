@@ -11,8 +11,8 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
-#include "delay.h"
+#include "spintronicsIncludes.h"
+#include "timerDrv.h"
 
 #define CS4272_RST_BAR PORTEbits.RE0
 

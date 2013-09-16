@@ -11,16 +11,20 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
+#include "spintronicsConfig.h"
 #include "muxControl.h"
 #include "digiPotDrv.h"
 #include "uartDrv.h"
+#include "fsmStates.h"
+#include "commsDefines.h"
+#include "utility.h"
 
 //how close do we tune the digiPots?
 #define R_AMP_MARGIN 2//out of 255
 #define R_BRIDGE_MARGIN 5//out of 1535
 
-void balanceBridgeGenerator(unsigned char runOrReset, _Q15 amplitude, _Q15 frequency, __eds__ _Q15 *cosOmegaT, __eds__ _Q15 *sinOmegaT);
+void balanceBridgeGenerator(uint8_t runOrReset, _Q15 amplitude, _Q15 frequency, __eds__ _Q15 *cosOmegaT, __eds__ _Q15 *sinOmegaT);
 void balanceBridgeMeasure(_Q15 bridgeSample, _Q15 cosOmegaT, _Q15 sinOmegaT, int64_t *cosAccumulator, int64_t *sinAccumulator);
 
 #ifdef TRIG_USES_LUT
@@ -544,7 +548,7 @@ void balanceBridgeFSM(void)
 
 }
 
-void balanceBridgeGenerator(unsigned char runOrReset, _Q15 amplitude, _Q15 frequency, __eds__ _Q15 *cosOmegaT, __eds__ _Q15 *sinOmegaT)
+void balanceBridgeGenerator(uint8_t runOrReset, _Q15 amplitude, _Q15 frequency, __eds__ _Q15 *cosOmegaT, __eds__ _Q15 *sinOmegaT)
 {
     static _Q15 freqT;
     if (runOrReset == RESET_SIGNAL_GEN)

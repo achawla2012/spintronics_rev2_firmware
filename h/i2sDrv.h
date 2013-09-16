@@ -10,5 +10,4 @@
  * michael.sandstedt@gmail.com
  */
 
-// External Functions
 extern void i2sInit(void);

@@ -12,7 +12,7 @@
  */
 
 #include "p33exxxx.h"
-#include "spintronics.h"
+#include "spintronicsIncludes.h"
 
 void muxInit (void)
 {
