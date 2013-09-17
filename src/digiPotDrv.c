@@ -175,3 +175,31 @@ float getRAmpOhms(uint8_t val)
 
     return ohms;
 }
+
+float getU25GainFromU24Ohms(float rg_ohms)
+{
+    return 1 + 6000.0 / rg_ohms;
+}
+
+float getU25GainFromU24Code(uint8_t u24_code)
+{
+    float rg_ohms;
+
+    rg_ohms = getRAmpOhms(u24_code);
+
+    return getU25GainFromU24Ohms(rg_ohms);
+}
+
+float getU25InverseGainFromU24Ohms(float rg_ohms)
+{
+    return rg_ohms / (6000.0 + rg_ohms);
+}
+
+float getU25InverseGainFromU24Code(uint8_t u24_code)
+{
+    float rg_ohms;
+
+    rg_ohms = getRAmpOhms(u24_code);
+
+    return getU25InverseGainFromU24Ohms(rg_ohms);
+}

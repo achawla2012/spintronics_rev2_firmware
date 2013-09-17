@@ -17,6 +17,7 @@
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
+#include "generateConstants.h"
 #include "timerDrv.h"
 #include "spiTx.h"
 #include "CS4272.h"
@@ -50,6 +51,8 @@ int main(void)
 	
     // Disable Watch Dog Timer
     RCONbits.SWDTEN=0;
+
+    generateConstants();
 
     //initialize components; order is important; DO NOT CHANGE
     timerInit();//initialize the timer

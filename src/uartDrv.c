@@ -19,7 +19,7 @@
 #include "fsmStates.h"
 #include "uartDrv.h"
 #include "commsDefines.h"
-#include "unitConversion.h"
+#include "generateConstants.h"
 #include "balanceBridge.h"
 #include "uartDrv.h"
 
@@ -56,6 +56,8 @@ _Q15 a2;//units are Q15 fractions of DAC full-scale
 uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
 uint8_t numberOfSensors;
 uint8_t bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
+uint8_t u24_code;
+float implementedGain;
 bool f1PlusF2OutOfRange;
 _Q15 bridge_balance_amplitude;
 _Q15 bridge_balance_frequency;
@@ -77,12 +79,12 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     maxMeasurementSamples = MAX_MEASUREMENT_SAMPLES;
     minMeasurementSamples = MIN_MEASUREMENT_SAMPLES;
 
-    if (GUISpecifiedF1 > MAX_OUTPUT_FREQUENCY)
+    if (GUISpecifiedF1 > max_output_hz)
     {
         transmitError(F1_OUT_OF_RANGE);
-        f1 = _Q15ftoi(MAX_OUTPUT_FREQUENCY * TWICE_SAMPLE_PERIOD);
-        implementedF1 = MAX_OUTPUT_FREQUENCY;
-        bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
+        f1 = _Q15ftoi(max_output_hz * twice_sample_period);
+        implementedF1 = max_output_hz;
+        bridge_balance_frequency = default_balance_frequency;//set in case we need to balance the bridge
 
     }
     else if (GUISpecifiedF1 < 0)
@@ -90,25 +92,25 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
         transmitError(F1_OUT_OF_RANGE);
         f1 = 0;
         implementedF1 = 0.0;
-        bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
+        bridge_balance_frequency = default_balance_frequency;//set in case we need to balance the bridge
     }
     else
     {
-        f1 = _Q15ftoi(GUISpecifiedF1 * TWICE_SAMPLE_PERIOD);
-        implementedF1 = _itofQ15(f1) * HALF_SAMPLE_RATE;
+        f1 = _Q15ftoi(GUISpecifiedF1 * twice_sample_period);
+        implementedF1 = _itofQ15(f1) * half_sample_rate;
         bridge_balance_frequency = f1;
     }
 
-    if (GUISpecifiedF2 > MAX_OUTPUT_FREQUENCY)
+    if (GUISpecifiedF2 > max_output_hz)
     {
         transmitError(F2_OUT_OF_RANGE);
-        f2 = _Q15ftoi(MAX_OUTPUT_FREQUENCY * TWICE_SAMPLE_PERIOD);
+        f2 = _Q15ftoi(max_output_hz * twice_sample_period);
         /*
          * truncate the lowest 3 bits so that the coil tone hits 0rad at least
          * every 2 ^ 16 / 2 ^3 = 8192 samples
          */
         f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
+        implementedF2 = _itofQ15(f2) * half_sample_rate;
     }
     else if (GUISpecifiedF2 < 0)
     {
@@ -118,18 +120,18 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     }
     else
     {
-        f2 = _Q15ftoi(GUISpecifiedF2 * TWICE_SAMPLE_PERIOD);
+        f2 = _Q15ftoi(GUISpecifiedF2 * twice_sample_period);
         
         /*
          * truncate the lowest 3 bits so that the coil tone hits 0rad at least
          * every 2 ^ 16 / 2 ^3 = 8192 samples
          */
         f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
+        implementedF2 = _itofQ15(f2) * half_sample_rate;
     }
 
     f1PlusF2OutOfRange = false;
-    if (GUISpecifiedF1 + GUISpecifiedF2 > MAX_OUTPUT_FREQUENCY)
+    if (GUISpecifiedF1 + GUISpecifiedF2 > max_output_hz)
     {
         f1PlusF2OutOfRange = true;
         transmitError(F1_PLUS_F2_OUT_OF_RANGE);
@@ -235,13 +237,13 @@ float setVolume(uint8_t channel, float voltage)
             transmitError(A1_OUT_OF_RANGE);
             a1 = 0x7FFF;
             voltage = FULLSCALE_BRIDGE_DAC_VOLTAGE;
-            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+            bridge_balance_amplitude = default_balance_amplitude;//set in case we need to balance the bridge
 
         } else if (voltage < 0.0) {
             transmitError(A1_OUT_OF_RANGE);
             a1 = 0x0000;
             voltage = 0.0;
-            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+            bridge_balance_amplitude = default_balance_amplitude;//set in case we need to balance the bridge
         } else {
             a1 = _Q15ftoi(voltage / FULLSCALE_BRIDGE_DAC_VOLTAGE);
             voltage = _itofQ15(a1) * FULLSCALE_BRIDGE_DAC_VOLTAGE;
@@ -955,7 +957,7 @@ void decodeBalanceBridgeCommand(uint8_t *payload)
         if (volts > FULLSCALE_BRIDGE_DAC_VOLTAGE || volts < 0.0) {
 
             transmitError(BRIDGE_BALANCE_VOLTAGE_OUT_OF_RANGE);
-            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;
+            bridge_balance_amplitude = default_balance_amplitude;
 
         } else {
 
@@ -963,14 +965,14 @@ void decodeBalanceBridgeCommand(uint8_t *payload)
 
         }
 
-        if (hz > MAX_OUTPUT_FREQUENCY || hz < 0) {
+        if (hz > max_output_hz || hz < 0) {
 
             transmitError(BRIDGE_BALANCE_FREQUENCY_OUT_OF_RANGE);
-            bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;
+            bridge_balance_frequency = default_balance_frequency;
 
         } else {
 
-            bridge_balance_frequency = _Q15ftoi(hz * TWICE_SAMPLE_PERIOD);
+            bridge_balance_frequency = _Q15ftoi(hz * twice_sample_period);
 
         }
 

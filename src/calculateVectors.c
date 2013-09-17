@@ -13,7 +13,7 @@
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
 #include "uartDrv.h"
-#include "unitConversion.h"
+#include "generateConstants.h"
 
 #define M_PI 3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
@@ -109,126 +109,126 @@ void calculateFinalVectors(void)
     {
         case 0:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor;
             }
             break;
 
 
         case 1:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_2;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_2;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_2;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_2;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_2;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_2;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_2;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_2;
             }
             break;
 
 
         case 2:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_4;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_4;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_4;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_4;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_4;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_4;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_4;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_4;
             }
             break;
 
 
         case 3:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_8;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_8;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_8;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_8;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_8;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_8;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_8;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_8;
             }
             break;
 
 
         case 4:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_16;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_16;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_16;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_16;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_16;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_16;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_16;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_16;
             }
             break;
 
 
         default:
 
-            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor;
             #endif
 
-            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR;
+            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR;
+                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor;
             }
             break;
 
     }
 
-    amplitude[4] = amplitude[4] * COIL_ADC_SCALE_FACTOR;
+    amplitude[4] = amplitude[4] * coil_ADC_scale_factor;
 
     for (i = 0; i < 5; ++ i) {
         phaseAngle32[i] = phaseAngle[i];
