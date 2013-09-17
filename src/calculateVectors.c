@@ -12,43 +12,21 @@
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
+#include "constants.h"
 #include "uartDrv.h"
-#include "generateConstants.h"
 
 #define M_PI 3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
 
-//file-scope global variables
-static uint8_t sensorAddressCapture;
-static int64_t cosAccumulatorCapture[5];
-static int64_t sinAccumulatorCapture[5];
-static bool bridgeADCClipCapture;
-static bool coilADCClipCapture;
-static bool bridgeDigitalClipCapture;
-static bool f1PlusF2OutOfRangeCapture;
-
-void spawnVectorCalcThread(uint16_t delayCycles, uint8_t sensorIndex, uint64_t *cosAccumulator, uint64_t *sinAccumulator, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip, bool f1PlusF2OutOfRange)
-{
-    uint8_t i;
-
-    START_ATOMIC();//begin critical section; must be atomic!
-    //capture static variables from measurementFSM so it can continue
-    sensorAddressCapture = sensorAddressTable[sensorIndex];
-    for (i = 0; i < 5; ++i) {
-        cosAccumulatorCapture[i] = cosAccumulator[i];
-        sinAccumulatorCapture[i] = sinAccumulator[i];
-    }
-    bridgeADCClipCapture = bridgeADCClip;
-    coilADCClipCapture = coilADCClip;
-    bridgeDigitalClipCapture = bridgeDigitalClip;
-    f1PlusF2OutOfRangeCapture = f1PlusF2OutOfRange;
-    END_ATOMIC();//end critical section
-
-    //start the timer
-    PR1 = delayCycles;
-    T1CONbits.TON = 1;
-
-}
+//global variables
+uint8_t sensorAddressCapture;
+int64_t cosAccumulatorCapture[5];
+int64_t sinAccumulatorCapture[5];
+bool bridgeADCClipCapture;
+bool coilADCClipCapture;
+bool bridgeDigitalClipCapture;
+bool f1PlusF2OutOfRangeCapture;
+float implementedBridgeGainCapture;
 
 void calculateFinalVectors(void)
 {
@@ -69,6 +47,12 @@ void calculateFinalVectors(void)
     START_ATOMIC();//begin critical section; must be atomic!
     localSensorAddress = sensorAddressCapture;
     for (i = 0; i < 5; ++i) {
+        #ifndef MEASURE_F2_AT_BRIDGE
+        //do not calculate this vector
+        if (1 == i) {
+            continue;
+        }
+        #endif
         cosAccumulatorFloat[i] = (double)cosAccumulatorCapture[i];
         sinAccumulatorFloat[i] = (double)sinAccumulatorCapture[i];
     }
@@ -104,131 +88,130 @@ void calculateFinalVectors(void)
         }
     }
 
-
     switch(bridgeADCGainFactor)//if digital gain was added, need to scale the reported voltage appropriately
     {
         case 0:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             }
             break;
 
 
         case 1:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_2;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_2;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_2;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_2;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
             }
             break;
 
 
         case 2:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_4;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_4;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_4;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_4;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
             }
             break;
 
 
         case 3:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_8;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_8;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_8;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_8;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
             }
             break;
 
 
         case 4:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor_by_16;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor_by_16;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor_by_16;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor_by_16;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
             }
             break;
 
 
         default:
 
-            amplitude[0] = amplitude[0] * bridge_ADC_scale_factor;
+            amplitude[0] = amplitude[0] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude[1] = amplitude[1] * bridge_ADC_scale_factor;
+            amplitude[1] = amplitude[1] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             #endif
 
-            amplitude[2] = amplitude[2] * bridge_ADC_scale_factor;
+            amplitude[2] = amplitude[2] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude[3] = 0;
             }
             else
             {
-                amplitude[3] = amplitude[3] * bridge_ADC_scale_factor;
+                amplitude[3] = amplitude[3] * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
             }
             break;
 
     }
 
-    amplitude[4] = amplitude[4] * coil_ADC_scale_factor;
+    amplitude[4] = amplitude[4] * COIL_ADC_SCALE_FACTOR;
 
     for (i = 0; i < 5; ++ i) {
         phaseAngle32[i] = phaseAngle[i];

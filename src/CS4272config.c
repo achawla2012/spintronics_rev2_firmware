@@ -16,8 +16,6 @@
 
 #define CS4272_RST_BAR PORTEbits.RE0
 
-void setCS4272ResetState(bool reset);
-
 void cs4272Init(void)
 {
     // Setup RE1 for connection to RSTbar on CS4272

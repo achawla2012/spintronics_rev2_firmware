@@ -21,7 +21,5 @@
 
 extern void setRBridge(uint16_t val);
 extern void setRAmp(uint8_t val);
-extern float getRBridgeOhms(uint16_t val);
-extern float getRAmpeOhms(uint8_t val);
-extern float getU25GainFromU24Code(uint8_t u24_code);
-extern float getU25InverseGainFromU24Code(uint8_t u24_code);
+extern float getBridgeBufGainFromU24Code(uint8_t u24_code);
+extern uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain);

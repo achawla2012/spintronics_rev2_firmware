@@ -15,12 +15,6 @@
 //#define CODEC_USES_I2S //un-comment this if tx/rx samples from the CODEC are in I2S format; otherwise samples are left-justified
 #define TRIG_USES_LUT//un-comment this to enable the LUT-based sin / cos functions; otherwise, the C30 _Q15cosPI(), _Q15sinPI() functions are used
 
-#define SAMPLE_RATE 38400 //units are samples per second
-
-#define PROCESSOR_CYCLES_PER_SECOND 70000000
-#define PROCESSOR_CYCLES_PER_MS 70000
-#define PROCESSOR_CYCLES_PER_US 70
-
 #ifdef SIMULATION_MODE
 #define MEASUREMENT_SETUP_TIME 10
 #define GAIN_CHECK_SETUP_TIME 10
@@ -42,8 +36,8 @@
 #define MAX_MEASUREMENT_SAMPLES 0x7FFF0000//the counters that keep track of this are uint32_t; must be strictly less than 0x8000000 to avoid ambiguity when casting to int32_t
 #define MIN_MEASUREMENT_SAMPLES 3840//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD
 
-#define DEFAULT_BALANCE_HZ 1000.0
-#define DEFAULT_BALANCE_VOLTS 1.0
+#define DELAY_TO_VECTOR_CALC_THREAD 150//processor cycles
+#define DELAY_TO_PROCESS_COMMAND_THREAD 150//processor cycles
 
 //uncomment PROBE and one of the probe sites to output that signal to the COIL DAC
 //#define PROBE

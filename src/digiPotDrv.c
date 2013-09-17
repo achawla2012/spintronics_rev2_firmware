@@ -12,6 +12,16 @@
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spiTx.h"
+#include "constants.h"
+
+float getRBridgeOhms(uint16_t val);
+float getRAmpOhms(uint8_t val);
+float getU25GainFromU24Ohms(float rg_ohms);
+float getU25GainFromU24Code(uint8_t u24_code);
+float getU25InverseGainFromU24Ohms(float rg_ohms);
+float getU25InverseGainFromU24Code(uint8_t u24_code);
+float getU24OhmsFromU25Gain(float u25_gain);
+uint8_t getU24CodeFromU25Gain(float u25_gain);
 
 /*
  * void setRBridge(uint16_t val)
@@ -131,11 +141,6 @@ float getRBridgeOhms(uint16_t val)
         val = 1535;
     }
 
-    /*
-     * Using WA tap for U20 / U23; min_code gives RMax, max_code gives Rmin
-     */
-    val = 1535 - val;
-
     u20_val = (val >> 8) * 51;
     u23_val = val & 0x00FF;
 
@@ -159,11 +164,6 @@ float getRBridgeOhms(uint16_t val)
 
 float getRAmpOhms(uint8_t val)
 {
-    /*
-     * Using WA tap for U24; min_code gives RMax, max_code gives Rmin
-     */
-    val = 255 - val;
-
     /*
      * val corresponds to values sent to U24 (AD8400ARZI).  See the Analog
      * Devices datasheet for more info.
@@ -190,6 +190,11 @@ float getU25GainFromU24Code(uint8_t u24_code)
     return getU25GainFromU24Ohms(rg_ohms);
 }
 
+float getBridgeBufGainFromU24Code(uint8_t u24_code)
+{
+    return getU25GainFromU24Code(u24_code) * U2_BUF_GAIN;
+}
+
 float getU25InverseGainFromU24Ohms(float rg_ohms)
 {
     return rg_ohms / (6000.0 + rg_ohms);
@@ -202,4 +207,37 @@ float getU25InverseGainFromU24Code(uint8_t u24_code)
     rg_ohms = getRAmpOhms(u24_code);
 
     return getU25InverseGainFromU24Ohms(rg_ohms);
+}
+
+float getU24OhmsFromU25Gain(float u25_gain)
+{
+    return 6000.0 / (u25_gain - 1);
+}
+
+uint8_t getU24CodeFromU25Gain(float u25_gain)
+{
+    uint8_t u24_code;
+    float u24_float_code;
+    float u24_ohms;
+
+    u24_ohms = getU24OhmsFromU25Gain(u25_gain);
+
+    u24_float_code = 256 - 256 * (u24_ohms - 50.0) * 1e-3;
+
+    if (u24_float_code < 0.0) {
+        u24_code = 0;
+    } else if (u24_float_code > 255.0) {
+        u24_code = 0xFF;
+    } else {
+        u24_code = u24_float_code;
+    }
+
+    return u24_code;
+
+}
+
+uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain) {
+
+    return getU24CodeFromU25Gain(bridge_gain * INVERSE_U2_BUF_GAIN);
+
 }

@@ -16,10 +16,10 @@
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
+#include "constants.h"
 #include "fsmStates.h"
 #include "uartDrv.h"
 #include "commsDefines.h"
-#include "generateConstants.h"
 #include "balanceBridge.h"
 #include "uartDrv.h"
 
@@ -46,6 +46,7 @@ static void decodeBalanceBridgeCommand(uint8_t *payload);
 
 //global variables
 uint8_t global_state = IDLE;
+uint8_t latest_command = 0xFF;
 uint32_t measurementTime;//units are samples
 _Q15 f1;//units are Q15 half-cycles per sample-period
 _Q15 f2;//units are Q15 half-cycles per sample-period
@@ -53,160 +54,196 @@ _Q15 fdiff;//units are Q15 half-cycles per sample-period
 _Q15 fsum;//units are Q15 half-cycles per sample-period
 _Q15 a1;//units are Q15 franctions of DAC full-scale
 _Q15 a2;//units are Q15 fractions of DAC full-scale
-uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
-uint8_t numberOfSensors;
 uint8_t bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
 uint8_t u24_code;
-float implementedGain;
+float implementedBridgeGain;
 bool f1PlusF2OutOfRange;
 _Q15 bridge_balance_amplitude;
 _Q15 bridge_balance_frequency;
 
+uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
+uint8_t numberOfSensors;
+
 static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static uint8_t btTxBuf [BT_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static int16_t usbTxCur, usbTxEnd, btTxCur, btTxEnd;//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY//keep it singed so my head doesn't hurt!
-static float implementedF1, implementedF2, implementedFSum, implementedFDiff;
 
-void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISpecifiedA2, float GUISpecifiedF2, float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor)
+static float GUISpecifiedA1;
+static float GUISpecifiedF1;
+static float GUISpecifiedA2;
+static float GUISpecifiedF2;
+static float GUISpecifiedT;
+static uint8_t GUISpeciedBridgeGainFactor;
+static float GUISpecifiedBridgeAnalogGain = 30.0;
+
+void processStartCommand(void)
 {
+    uint32_t local_T;//units are samples
+    _Q15 local_f1, local_f2, local_fdiff, local_fsum, local_bridge_balance_frequency;//units are Q15 half-cycles per sample-period
+    _Q15 local_a1, local_a2, local_bridge_balance_amplitude;//units are Q15 franctions of DAC full-scale
+    uint8_t local_gain_factor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
+    uint8_t local_u24_code;
+    float local_implementedBridgeGain;
+    bool local_f1PlusF2OutOfRange;
+
+    float implementedF1, implementedF2, implementedFSum, implementedFDiff;
     float implementedA1, implementedA2, implementedT, maxMeasurementSamples, minMeasurementSamples;
     uint8_t implementedBridgeGainFactor, startPayload_confirmToGUI[25], i;
     float tempTime;
 
-    implementedA1 = setVolume(0, GUISpecifiedA1);
-    implementedA2 = setVolume(1, GUISpecifiedA2);
+    if (GUISpecifiedA1 > FULLSCALE_BRIDGE_DAC_VOLTAGE) {
+
+        transmitError(A1_OUT_OF_RANGE);
+        local_a1 = 0x7FFF;
+        implementedA1 = FULLSCALE_BRIDGE_DAC_VOLTAGE;
+        local_bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+
+    } else if (GUISpecifiedA1 < 0.0) {
+
+        transmitError(A1_OUT_OF_RANGE);
+        local_a1 = 0x0000;
+        implementedA1 = 0.0;
+        local_bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;//set in case we need to balance the bridge
+
+    } else {
+        local_a1 = _Q15ftoi(GUISpecifiedA1 / FULLSCALE_BRIDGE_DAC_VOLTAGE);
+        implementedA1 = _itofQ15(local_a1) * FULLSCALE_BRIDGE_DAC_VOLTAGE;
+        local_bridge_balance_amplitude = local_a1;//set in case we need to balance the bridge
+    }
+
+    if (GUISpecifiedA2 > FULLSCALE_COIL_DAC_VOLTAGE) {
+
+        transmitError(A2_OUT_OF_RANGE);
+        local_a2 = 0x7FFF;
+        implementedA2 = FULLSCALE_COIL_DAC_VOLTAGE;
+
+    } else if (GUISpecifiedA2 < 0.0) {
+
+        transmitError(A2_OUT_OF_RANGE);
+        local_a2 = 0x0000;
+        implementedA2 = 0.0;
+
+    } else {
+
+        local_a2 = _Q15ftoi(GUISpecifiedA2 / FULLSCALE_COIL_DAC_VOLTAGE);
+        implementedA2 = _itofQ15(local_a2) * FULLSCALE_COIL_DAC_VOLTAGE;
+
+    }
 
     maxMeasurementSamples = MAX_MEASUREMENT_SAMPLES;
     minMeasurementSamples = MIN_MEASUREMENT_SAMPLES;
 
-    if (GUISpecifiedF1 > max_output_hz)
-    {
+    if (GUISpecifiedF1 > MAX_OUTPUT_HZ) {
         transmitError(F1_OUT_OF_RANGE);
-        f1 = _Q15ftoi(max_output_hz * twice_sample_period);
-        implementedF1 = max_output_hz;
-        bridge_balance_frequency = default_balance_frequency;//set in case we need to balance the bridge
+        local_f1 = _Q15ftoi(MAX_OUTPUT_HZ * TWICE_SAMPLE_PERIOD);
+        implementedF1 = MAX_OUTPUT_HZ;
+        local_bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
 
-    }
-    else if (GUISpecifiedF1 < 0)
-    {
+    } else if (GUISpecifiedF1 < 0) {
         transmitError(F1_OUT_OF_RANGE);
-        f1 = 0;
+        local_f1 = 0;
         implementedF1 = 0.0;
-        bridge_balance_frequency = default_balance_frequency;//set in case we need to balance the bridge
-    }
-    else
-    {
-        f1 = _Q15ftoi(GUISpecifiedF1 * twice_sample_period);
-        implementedF1 = _itofQ15(f1) * half_sample_rate;
-        bridge_balance_frequency = f1;
+        local_bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
+    } else {
+        local_f1 = _Q15ftoi(GUISpecifiedF1 * TWICE_SAMPLE_PERIOD);
+        implementedF1 = _itofQ15(f1) * HALF_SAMPLE_RATE;
+        local_bridge_balance_frequency = f1;
     }
 
-    if (GUISpecifiedF2 > max_output_hz)
-    {
+    if (GUISpecifiedF2 > MAX_OUTPUT_HZ) {
         transmitError(F2_OUT_OF_RANGE);
-        f2 = _Q15ftoi(max_output_hz * twice_sample_period);
+        local_f2 = _Q15ftoi(MAX_OUTPUT_HZ * TWICE_SAMPLE_PERIOD);
         /*
          * truncate the lowest 3 bits so that the coil tone hits 0rad at least
          * every 2 ^ 16 / 2 ^3 = 8192 samples
          */
-        f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * half_sample_rate;
-    }
-    else if (GUISpecifiedF2 < 0)
-    {
+        local_f2 &= 0xFFF8;
+        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
+    } else if (GUISpecifiedF2 < 0) {
         transmitError(F2_OUT_OF_RANGE);
-        f2 = 0;
+        local_f2 = 0;
         implementedF2 = 0.0;
-    }
-    else
-    {
-        f2 = _Q15ftoi(GUISpecifiedF2 * twice_sample_period);
-        
+    } else {
+        local_f2 = _Q15ftoi(GUISpecifiedF2 * TWICE_SAMPLE_PERIOD);
+
         /*
          * truncate the lowest 3 bits so that the coil tone hits 0rad at least
          * every 2 ^ 16 / 2 ^3 = 8192 samples
          */
-        f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * half_sample_rate;
+        local_f2 &= 0xFFF8;
+        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
     }
 
-    f1PlusF2OutOfRange = false;
-    if (GUISpecifiedF1 + GUISpecifiedF2 > max_output_hz)
-    {
-        f1PlusF2OutOfRange = true;
+    local_f1PlusF2OutOfRange = false;
+    if (GUISpecifiedF1 + GUISpecifiedF2 > MAX_OUTPUT_HZ) {
+        local_f1PlusF2OutOfRange = true;
         transmitError(F1_PLUS_F2_OUT_OF_RANGE);
-        fsum = 0;
+        local_fsum = 0;
         implementedFSum = 0;
-    }
-    else
-    {
-        fsum = f1 + f2;
+    } else {
+        local_fsum = f1 + f2;
         implementedFSum = implementedF1 + implementedF2;
     }
-    fdiff = _Q15abs(f1 - f2);
+    local_fdiff = _Q15abs(f1 - f2);
     implementedFDiff = abs(implementedF1 - implementedF2);
 
     tempTime = GUISpecifiedT * SAMPLE_RATE;
-    if (tempTime > maxMeasurementSamples)
-    {
+    if (tempTime > maxMeasurementSamples) {
         transmitError(T_OUT_OF_RANGE);
-        measurementTime = MAX_MEASUREMENT_SAMPLES;
+        local_T = MAX_MEASUREMENT_SAMPLES;
         implementedT = maxMeasurementSamples / SAMPLE_RATE;
-    }
-    else if (tempTime < minMeasurementSamples)
-    {
+    } else if (tempTime < minMeasurementSamples) {
         transmitError(T_OUT_OF_RANGE);
-        measurementTime = MIN_MEASUREMENT_SAMPLES;
+        local_T = MIN_MEASUREMENT_SAMPLES;
         implementedT = minMeasurementSamples / SAMPLE_RATE;
-    }
-    else
-    {
-        measurementTime = (uint32_t)tempTime;
+    } else {
+        local_T = (uint32_t)tempTime;
         implementedT = (float)measurementTime / SAMPLE_RATE;
     }
 
     switch(GUISpeciedBridgeGainFactor)
     {
         case 1:
-        {
-            bridgeADCGainFactor = 0;
+            local_gain_factor = 0;
             implementedBridgeGainFactor = 1;
             break;
-        }
         case 2:
-        {
-            bridgeADCGainFactor = 1;
+            local_gain_factor = 1;
             implementedBridgeGainFactor = 2;
             break;
-        }
         case 4:
-        {
-            bridgeADCGainFactor = 2;
+            local_gain_factor = 2;
             implementedBridgeGainFactor = 4;
             break;
-        }
         case 8:
-        {
-            bridgeADCGainFactor = 3;
+            local_gain_factor = 3;
             implementedBridgeGainFactor = 8;
             break;
-        }
         case 16:
-        {
-            bridgeADCGainFactor = 4;
+            local_gain_factor = 4;
             implementedBridgeGainFactor = 16;
             break;
-        }
         default:
-        {
             transmitError(INVALID_DIGITAL_GAIN_VALUE);
-            bridgeADCGainFactor = 0;
+            local_gain_factor = 0;
             implementedBridgeGainFactor = 1;
             break;
-        }
     }
 
-    startPayload_confirmToGUI[0] = 0xFE;
+    if (GUISpecifiedBridgeAnalogGain < BRIDGE_ADC_BUFFER_MIN_GAIN) {
+        transmitError(ANALOG_GAIN_OUT_OF_RANGE);
+        local_u24_code = 0x00;
+        implementedBridgeGain = BRIDGE_ADC_BUFFER_MIN_GAIN;
+    } else if (GUISpecifiedF1 > BRIDGE_ADC_BUFFER_MAX_GAIN) {
+        transmitError(ANALOG_GAIN_OUT_OF_RANGE);
+        local_u24_code = 0xFF;
+        implementedBridgeGain = BRIDGE_ADC_BUFFER_MAX_GAIN;
+    } else {
+        local_u24_code = getU24CodeFromBrdigeBufGain(GUISpecifiedBridgeAnalogGain);
+        implementedBridgeGain = getBridgeBufGainFromU24Code(u24_code);
+    }
+
+    startPayload_confirmToGUI[0] = START_MESSAGE;
     startPayload_confirmToGUI[1] = CONFIRM_START_COMMAND;
     startPayload_confirmToGUI[2] = 0x15;
     float_to_bytes(implementedA1, &startPayload_confirmToGUI[3]);
@@ -214,56 +251,33 @@ void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1, float GUISp
     float_to_bytes(implementedA2, &startPayload_confirmToGUI[11]);
     float_to_bytes(implementedF2, &startPayload_confirmToGUI[15]);
     float_to_bytes(implementedT, &startPayload_confirmToGUI[19]);
-    startPayload_confirmToGUI[23] = implementedBridgeGainFactor;
+    float_to_bytes(implementedBridgeGain, &startPayload_confirmToGUI[23]);
+    startPayload_confirmToGUI[27] = implementedBridgeGainFactor;
 
-    startPayload_confirmToGUI[24] =0;
-    for (i = 1; i<24; i++)
+    startPayload_confirmToGUI[28] = 0;
+    for (i = 1; i < 28; i++)
     {
-        startPayload_confirmToGUI[24] = startPayload_confirmToGUI[24] ^ startPayload_confirmToGUI[i];
+        startPayload_confirmToGUI[28] = startPayload_confirmToGUI[28] ^ startPayload_confirmToGUI[i];
     }
-    send(startPayload_confirmToGUI,25);
+    send(startPayload_confirmToGUI, 29);
 
     START_ATOMIC();//begin critical section; must be atomic!
+    measurementTime = local_T;
+    f1 = local_f1;
+    f2 = local_f2;
+    fdiff = local_fdiff;
+    fsum = local_fsum;
+    a1 = local_a1;
+    a2 = local_a2;
+    bridgeADCGainFactor = local_gain_factor;
+    u24_code = local_u24_code;
+    implementedBridgeGain = local_implementedBridgeGain;
+    f1PlusF2OutOfRange = local_f1PlusF2OutOfRange;
+    bridge_balance_amplitude = local_bridge_balance_amplitude;
+    bridge_balance_frequency = local_bridge_balance_frequency;
     global_state = RAMP_DOWN_COIL_RESTART;
     END_ATOMIC();//end critical section
 
-}
-
-float setVolume(uint8_t channel, float voltage)
-{
-    if (channel == 0x00)
-    {
-        if (voltage > FULLSCALE_BRIDGE_DAC_VOLTAGE) {
-            transmitError(A1_OUT_OF_RANGE);
-            a1 = 0x7FFF;
-            voltage = FULLSCALE_BRIDGE_DAC_VOLTAGE;
-            bridge_balance_amplitude = default_balance_amplitude;//set in case we need to balance the bridge
-
-        } else if (voltage < 0.0) {
-            transmitError(A1_OUT_OF_RANGE);
-            a1 = 0x0000;
-            voltage = 0.0;
-            bridge_balance_amplitude = default_balance_amplitude;//set in case we need to balance the bridge
-        } else {
-            a1 = _Q15ftoi(voltage / FULLSCALE_BRIDGE_DAC_VOLTAGE);
-            voltage = _itofQ15(a1) * FULLSCALE_BRIDGE_DAC_VOLTAGE;
-            bridge_balance_amplitude = a1;//set in case we need to balance the bridge
-        }
-    } else {
-        if (voltage > FULLSCALE_COIL_DAC_VOLTAGE) {
-            transmitError(A2_OUT_OF_RANGE);
-            a2 = 0x7FFF;
-            voltage = FULLSCALE_COIL_DAC_VOLTAGE;
-        } else if (voltage < 0.0) {
-            transmitError(A2_OUT_OF_RANGE);
-            a2 = 0x0000;
-            voltage = 0.0;
-        } else {
-            a2 = _Q15ftoi(voltage / FULLSCALE_COIL_DAC_VOLTAGE);
-            voltage = _itofQ15(a2) * FULLSCALE_COIL_DAC_VOLTAGE;
-        }
-    }
-    return voltage;
 }
 
 void uart_Init (void)
@@ -294,7 +308,7 @@ void uart_Init (void)
     /***************************************************************************
      * pin setup
      **************************************************************************/
-    
+
     //RP101/RF5/PIN32 connects to USB_RESET via Si8442
     TRISFbits.TRISF5 = 0;//set RF5 to be an output so we can toggle the reset pin of the FTDI via the Si8442
     FTDI_RST_BAR = 0;//bring reset low (active)
@@ -306,7 +320,7 @@ void uart_Init (void)
     //RPI45/RB13/PIN28 connects to RX_BT
     ANSELBbits.ANSB13 = 0;//make RB13 digital
     // = 0x03;//route U2TX to ???
-    
+
     //RPI46/RB14/PIN29 connects to TX_BT
     ANSELBbits.ANSB14 = 0;//make RB14 digital
     RPINR19bits.U2RXR = 46;//route RPI46 to U2RXR
@@ -354,7 +368,7 @@ void uart_Init (void)
     IFS0bits.U1TXIF = 0;         //clear TX interrupt flag
     IEC0bits.U1TXIE = 1;        //enable UART TX Interrupt
     U1STAbits.UTXEN = 1;        //enable UART.TXEN
-    
+
     IEC0bits.U1RXIE = 0;         //disable RX interrupt
     IPC2bits.U1RXIP = 6;	//Receive interrupt priority
     U1STAbits.URXISEL = 0;      //Interrupt is set when any character is received and transferred from the UxRSR to the receive buffer; receive buffer has one or more characters
@@ -469,7 +483,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
         numBytesInPayload =  payloadBytesReceived + USB_RxBuffer[endDataRxPointer] + 1;
 
     } else if (payloadBytesReceived == numBytesInPayload) {
-        
+
         if (numBytesInPayload > (endDataRxPointer + 1)) {
 
             receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + USB_RX_BUF_SZ + 1, numBytesInPayload);
@@ -738,7 +752,7 @@ bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
     {
         bufSpaceAvl = usbTxCur - usbTxEnd - 1;
     }
-    
+
     if (bufSpaceAvl < numBytes)
     {
         spawnTxThread = false;//no message transmitted; a buffer overflow has occurred
@@ -765,7 +779,7 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
     uint16_t bufSpaceAvl, i;
 
     START_ATOMIC();//begin critical section; must be atomic!
-    
+
     if (btTxEnd == btTxCur)
     {
         spawnTxThread = true;
@@ -848,11 +862,6 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
                     START_ATOMIC();//begin critical section; must be atomic!
                     global_state = RAMP_DOWN_COIL_QUIT;
                     END_ATOMIC();//end critical section
-
-                    payload[1] = CONFIRM_STOP_COMMAND;
-                    payload[2] = 0;
-                    payload[3] = payload[1] ^ payload[2];
-                    send(payload, 4);
                 }
                 break;
 
@@ -935,70 +944,68 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
 
 void decodeBalanceBridgeCommand(uint8_t *payload)
 {
-    float volts, hz;
-    
+    uint8_t confirm_payload[4];
+    float GUISpecBalanceVolts;
+    float GUISpecBalanceHz;
+
     if (payload[2] != 8) {
 
         transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
 
     } else {
 
+        START_ATOMIC();//begin critical section; must be atomic!
         sensorRBridgeTableValid = false;
-        *(__eds__ uint8_t *)&volts = payload[3];
-        *((__eds__ uint8_t *)&volts + 1) = payload[4];
-        *((__eds__ uint8_t *)&volts + 2) = payload[5];
-        *((__eds__ uint8_t *)&volts + 3) = payload[6];
+        *(__eds__ uint8_t *)&GUISpecBalanceVolts = payload[3];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 1) = payload[4];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 2) = payload[5];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 3) = payload[6];
 
-        *(__eds__ uint8_t *)&hz = payload[7];
-        *((__eds__ uint8_t *)&hz + 1) = payload[8];
-        *((__eds__ uint8_t *)&hz + 2) = payload[9];
-        *((__eds__ uint8_t *)&hz + 3) = payload[10];
+        *(__eds__ uint8_t *)&GUISpecBalanceHz = payload[7];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 1) = payload[8];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 2) = payload[9];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 3) = payload[10];
 
-        if (volts > FULLSCALE_BRIDGE_DAC_VOLTAGE || volts < 0.0) {
+        if (GUISpecBalanceVolts > FULLSCALE_BRIDGE_DAC_VOLTAGE || GUISpecBalanceVolts < 0.0) {
 
             transmitError(BRIDGE_BALANCE_VOLTAGE_OUT_OF_RANGE);
-            bridge_balance_amplitude = default_balance_amplitude;
+            bridge_balance_amplitude = DEFAULT_BALANCE_AMPLITUDE;
 
         } else {
 
-            bridge_balance_amplitude = _Q15ftoi(volts / FULLSCALE_BRIDGE_DAC_VOLTAGE);
+            bridge_balance_amplitude = _Q15ftoi(GUISpecBalanceVolts / FULLSCALE_BRIDGE_DAC_VOLTAGE);
 
         }
 
-        if (hz > max_output_hz || hz < 0) {
+        if (GUISpecBalanceHz > MAX_OUTPUT_HZ || GUISpecBalanceHz < 0) {
 
             transmitError(BRIDGE_BALANCE_FREQUENCY_OUT_OF_RANGE);
-            bridge_balance_frequency = default_balance_frequency;
+            bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;
 
         } else {
 
-            bridge_balance_frequency = _Q15ftoi(hz * twice_sample_period);
+            bridge_balance_frequency = _Q15ftoi(GUISpecBalanceHz * TWICE_SAMPLE_PERIOD);
 
         }
+
+        confirm_payload[0] = START_MESSAGE;
+        confirm_payload[1] = CONFIRM_BALANCE_BRIDGE;
+        confirm_payload[2] = 0;
+        confirm_payload[3] = confirm_payload[1] ^ confirm_payload[2];
+        send(confirm_payload, 4);
 
         START_ATOMIC();//begin critical section; must be atomic!
         global_state = RAMP_DOWN_COIL_BALANCE_BRIDGE;
         END_ATOMIC();//end critical section
 
-        payload[1] = CONFIRM_BALANCE_BRIDGE;
-        payload[2] = 0;
-        payload[3] = payload[1] ^ payload[2];
-        send(payload, 4);
-
     }
-
 }
 
 void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
 {
     uint8_t i, k, array[4];
-    float GUISpecifiedA1;
-    float GUISpecifiedF1;
-    float GUISpecifiedA2;
-    float GUISpecifiedF2;
-    float GUISpecifiedT;
 
-    if (21 != startpayload[2]) {
+    if (25 != startpayload[2]) {
         transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
         return;
     }
@@ -1008,7 +1015,8 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
      * TODO: this is ridiculous.  no, endianness is not different; the mobile
      * GUI is screwed up.
      */
-    
+
+    START_ATOMIC();//begin critical section; must be atomic!
     if (rxFromUSB) {
 
         /* floating point data types begin from startpayload[3], so set k=3 */
@@ -1042,15 +1050,26 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
             array[i] = startpayload[k];
             ++k;
         }
-
         GUISpecifiedT = *(__eds__ float *)&array;
 
-        processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            ++k;
+        }
+        GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
+
+        GUISpeciedBridgeGainFactor = startpayload[27];
 
     } else {          //bluetooth is connected
     // floating point data types end at startpayload[22], so set k = 22;
 
-        k=22;
+        k=26;
+        for(i=0; i<4; i++) {
+            array[i] = startpayload[k];
+            --k;
+        }
+        GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
+
         for(i=0; i<4; i++) {
             array[i] = startpayload[k];
             --k;
@@ -1081,7 +1100,14 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
         }
         GUISpecifiedA1 = *(__eds__ float *)&array;
 
-        processStartCommand(GUISpecifiedA1,GUISpecifiedF1, GUISpecifiedA2,GUISpecifiedF2,GUISpecifiedT, startpayload[23]);
+        GUISpeciedBridgeGainFactor = startpayload[27];
     }
 
+    latest_command = START_COMMAND;
+
+    //start the timer to spawn the process command thread
+    PR4 = DELAY_TO_PROCESS_COMMAND_THREAD;
+    T4CONbits.TON = 1;
+
+    END_ATOMIC();//end critical section
 }

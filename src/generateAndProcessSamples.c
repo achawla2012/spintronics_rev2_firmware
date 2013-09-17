@@ -60,6 +60,7 @@ void measurementFSM(void)
     static _Q15 local_f2;//units are Q15 half-cycles per sample-period
     static _Q15 local_a2;
     static bool local_f1PlusF2OutOfRange;
+    static float local_implementedBridgeGain;
 
     //START_ATOMIC() called from calling ISR
 
@@ -151,6 +152,15 @@ void measurementFSM(void)
              * START command's values
              */
             local_f1PlusF2OutOfRange = f1PlusF2OutOfRange;
+
+            /*
+             * implementedBridgeGain TBD at time START command is issued;
+             * capture now to prevent the value being overwritten by receipt of
+             * a new START command during the last cycle with the previous
+             * START command's values
+             */
+            local_implementedBridgeGain = implementedBridgeGain;
+
             END_ATOMIC();//end critical section
 
             if (balanceBridgeFirst) {
@@ -162,6 +172,7 @@ void measurementFSM(void)
                 signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
                 local_state = RAMP_UP_COIL;
                 current_a2 = 0;
+                setRAmp(u24_code);
             }
             break;
 
@@ -240,10 +251,33 @@ void measurementFSM(void)
 
         case CALCULATE_VECTORS:
         {
+
             signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
 
-            spawnVectorCalcThread(150, sensorIndex, cosAccumulator, sinAccumulator, bridgeADCClip, coilADCClip, bridgeDigitalClip, local_f1PlusF2OutOfRange);
+            //capture necessary variables for processing the vector calc thread
+            sensorAddressCapture = sensorAddress;
+            cosAccumulatorCapture[0] = cosAccumulator[0];
+            sinAccumulatorCapture[0] = sinAccumulator[0];
+            #ifdef MEASURE_F2_AT_BRIDGE
+            cosAccumulatorCapture[1] = cosAccumulator[1];
+            sinAccumulatorCapture[1] = sinAccumulator[1];
+            #endif
+            cosAccumulatorCapture[2] = cosAccumulator[2];
+            sinAccumulatorCapture[2] = sinAccumulator[2];
+            cosAccumulatorCapture[3] = cosAccumulator[3];
+            sinAccumulatorCapture[3] = sinAccumulator[3];
+            cosAccumulatorCapture[4] = cosAccumulator[4];
+            sinAccumulatorCapture[4] = sinAccumulator[4];
+            bridgeADCClipCapture = bridgeADCClip;
+            coilADCClipCapture = coilADCClip;
+            bridgeDigitalClipCapture = bridgeDigitalClip;
+            f1PlusF2OutOfRangeCapture = local_f1PlusF2OutOfRange;
+            implementedBridgeGainCapture = local_implementedBridgeGain;
+
+            //start the timer to spawn the vector calc thread
+            PR1 = DELAY_TO_VECTOR_CALC_THREAD;
+            T1CONbits.TON = 1;
 
             ++sensorIndex;
             if (sensorIndex >= numberOfSensors) {

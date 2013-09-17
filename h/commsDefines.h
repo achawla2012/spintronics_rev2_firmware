@@ -8,6 +8,8 @@
  * michael.sandstedt@gmail.com
  */
 
+#define START_MESSAGE               0xFE
+
 //message type received from GUI
 #define START_COMMAND               0x00
 #define STOP_COMMAND                0x01
@@ -39,3 +41,4 @@
 #define BRIDGE_BALANCE_FAILURE 0x0E
 #define RECEIVED_PACKET_WITH_INCORRECT_SIZE 0x0F
 #define UNRECOGNIZED_COMMAND_RECEIVED 0x10
+#define ANALOG_GAIN_OUT_OF_RANGE 0x11

@@ -18,8 +18,8 @@
       <itemPath>../h/spintronicsConfig.h</itemPath>
       <itemPath>../h/utility.h</itemPath>
       <itemPath>../h/timerDrv.h</itemPath>
-      <itemPath>../h/generateConstants.h</itemPath>
       <itemPath>../h/commsDefines.h</itemPath>
+      <itemPath>../h/constants.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -43,7 +43,6 @@
       <itemPath>../src/timerDrv.c</itemPath>
       <itemPath>../src/calculateVectors.c</itemPath>
       <itemPath>../src/balanceBridge.c</itemPath>
-      <itemPath>../src/generateConstants.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
