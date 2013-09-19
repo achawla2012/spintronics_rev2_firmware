@@ -32,7 +32,7 @@ extern _Q15 _Q15cosPILUT(_Q15 phiOverPI);
 extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 #endif
 
-uint16_t sensorRBridgeTable[256];
+uint16_t sensorRBridgeTable[MAX_MUX_ADDRESS_TABLE_SIZE];
 bool sensorRBridgeTableValid = false;
 
 void balanceBridgeFSM(void)

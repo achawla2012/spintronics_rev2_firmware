@@ -98,6 +98,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
     uint8_t junk;
     
     IFS0bits.SPI1IF = 0;// Clear the Interrupt flag
+    IEC0bits.SPI1IE = 0;
     
     //Disable all chip select lines
     CS1 = 1;
@@ -127,11 +128,11 @@ static void spiTxWorker(void)
     uint8_t i;
     
     START_ATOMIC();//begin critical section; must be atomic!
-    if (spiTxEnd != spiTxCur)//test to see if there is still data to transmit!
+    if (spiTxEnd != spiTxCur && SPI1STATbits.SRMPT)//test to see if there is data to transmit and the SPI is ready.
     {
         numBytes = (spiTxBuf[spiTxCur] && SPI_TX_PL_SIZE_MASK) >> 8;
         
-        if (numBytes <= 8)
+        if (numBytes <= 8 && SPI1STATbits.SRMPT)
         {
             addr = (spiTxBuf[spiTxCur] && SPI_TX_ADDR_MASK) >> 12;
             
@@ -174,7 +175,11 @@ void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
 {
     bool spawnTxThread = false;
     uint8_t bufSpaceAvl, header, i;
-    
+
+    if (0 == numBytes) {
+        return;
+    }
+
     START_ATOMIC();//begin critical section; must be atomic!
 
     if (spiTxCur == spiTxEnd)
@@ -191,11 +196,8 @@ void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
         bufSpaceAvl = spiTxCur - spiTxEnd - 1;
     }
 
-    if (bufSpaceAvl < numBytes)
+    if (bufSpaceAvl >= numBytes)
     {
-        spawnTxThread = false;
-    }
-    else {
         header = numBytes + (addr << 4);
         //assign to the uppper byte of spiTxBuf[spiTxEnd]
         *((uint8_t *)(spiTxBuf + spiTxEnd) + 1) = header;

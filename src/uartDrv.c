@@ -60,7 +60,8 @@ bool f1PlusF2OutOfRange;
 _Q15 bridge_balance_amplitude;
 _Q15 bridge_balance_frequency;
 
-uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
+uint8_t *sensorAddressTable;
+uint8_t sensorAddressTableAllocated[MAX_MUX_ADDRESS_TABLE_SIZE];
 uint8_t numberOfSensors;
 
 static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
@@ -285,7 +286,17 @@ void uart_Init (void)
     /***************************************************************************
      * initialization of global variables
      **************************************************************************/
+#ifdef SIMULATION_MODE
+    GUISpecifiedA1 = 2.0;
+    GUISpecifiedF1 = 1000.0;
+    GUISpecifiedA2 = 2.0;
+    GUISpecifiedF2 = 100.0;
+    GUISpecifiedT = 1.0;
+    GUISpeciedBridgeGainFactor = 0x04;
+    GUISpecifiedBridgeAnalogGain = 30.0;
+#endif
 
+    sensorAddressTable = sensorAddressTableAllocated;
     measurementTime = SAMPLE_RATE;
     f1 = 0;
     f2 = 0;
@@ -407,9 +418,11 @@ void uart_Init (void)
      * clear interrupt flags, clear buffers, enable interrupts
      **************************************************************************/
 
+#ifndef SIMULATION_MODE
     busy_wait_ms(10);           //wait for the FTDI to reset
     FTDI_RST_BAR = 1;           //start the FTDI
     busy_wait_ms(50);           //wait for the FTDI to start
+#endif
 
     IFS0bits.U1RXIF = 0;        //clear U1RXIF
     U1STAbits.OERR = 0;         //clear overflow error flag
@@ -648,11 +661,15 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 {
+    IFS0bits.U1TXIF = 0;
+    IEC0bits.U1TXIE = 0;
     usbTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 {
+    IFS1bits.U2TXIF = 0;
+    IEC1bits.U2TXIE = 0;
     btTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
 }
 
@@ -766,6 +783,9 @@ void usbTxWorker(void)
             }
         }
     }
+    if (usbTxEnd != usbTxCur) {
+        IEC0bits.U1TXIE = 1;//enable interrupt to call the worker again
+    }
     END_ATOMIC();//end critical section
 }
 
@@ -783,6 +803,9 @@ void btTxWorker(void)
                 btTxCur = 0;
             }
         }
+    }
+    if (usbTxEnd != usbTxCur) {
+        IEC1bits.U2TXIE = 1;//enable interrupt to call the worker again
     }
     END_ATOMIC();//end critical section
 }

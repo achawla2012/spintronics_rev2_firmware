@@ -10,8 +10,6 @@
  * michael.sandstedt@gmail.com
  */
 
-#define MAX_MUX_ADDRESS_TABLE_SIZE 32
-
 //function prototypes
 extern void uartInit (void);
 extern void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag);
@@ -27,7 +25,7 @@ extern _Q15 fdiff;//units are half-cycles per sample-period
 extern _Q15 fsum;//units are half-cycles per sample-period
 extern _Q15 a1;
 extern _Q15 a2;
-extern uint8_t sensorAddressTable[MAX_MUX_ADDRESS_TABLE_SIZE];
+extern uint8_t *sensorAddressTable;
 extern uint8_t numberOfSensors;
 extern bool f1PlusF2OutOfRange;
 extern _Q15 bridge_balance_amplitude;
