@@ -11,8 +11,6 @@
  */
 
 #define MAX_MUX_ADDRESS_TABLE_SIZE 32
-#define MAX_RX_BYTES_TO_FOLLOW MAX_MUX_ADDRESS_TABLE_SIZE
-#define MAX_RX_PAYLOAD_SIZE (MAX_RX_BYTES_TO_FOLLOW - 4)
 
 //function prototypes
 extern void uartInit (void);

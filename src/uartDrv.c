@@ -37,12 +37,12 @@ static float setVolume(uint8_t channel, float voltage);
 static void send(uint8_t* array, uint8_t numBytes);
 static void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload);
 static void float_to_bytes(float myFloat, uint8_t *array);
-static void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[]);
+static void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPayload);
 static void usbTxWorker(void);
 static void btTxWorker(void);
 static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
-static void decodeBalanceBridgeCommand(uint8_t *payload);
+static void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload);
 
 //global variables
 uint8_t global_state = IDLE;
@@ -243,23 +243,22 @@ void processStartCommand(void)
         implementedBridgeGain = getBridgeBufGainFromU24Code(u24_code);
     }
 
-    startPayload_confirmToGUI[0] = START_MESSAGE;
-    startPayload_confirmToGUI[1] = CONFIRM_START_COMMAND;
-    startPayload_confirmToGUI[2] = 0x15;
-    float_to_bytes(implementedA1, &startPayload_confirmToGUI[3]);
-    float_to_bytes(implementedF1, &startPayload_confirmToGUI[7]);
-    float_to_bytes(implementedA2, &startPayload_confirmToGUI[11]);
-    float_to_bytes(implementedF2, &startPayload_confirmToGUI[15]);
-    float_to_bytes(implementedT, &startPayload_confirmToGUI[19]);
-    float_to_bytes(implementedBridgeGain, &startPayload_confirmToGUI[23]);
-    startPayload_confirmToGUI[27] = implementedBridgeGainFactor;
+    startPayload_confirmToGUI[0] = CONFIRM_START_COMMAND;
+    startPayload_confirmToGUI[1] = 0x15;
+    float_to_bytes(implementedA1, &startPayload_confirmToGUI[2]);
+    float_to_bytes(implementedF1, &startPayload_confirmToGUI[6]);
+    float_to_bytes(implementedA2, &startPayload_confirmToGUI[10]);
+    float_to_bytes(implementedF2, &startPayload_confirmToGUI[14]);
+    float_to_bytes(implementedT, &startPayload_confirmToGUI[18]);
+    float_to_bytes(implementedBridgeGain, &startPayload_confirmToGUI[22]);
+    startPayload_confirmToGUI[26] = implementedBridgeGainFactor;
 
-    startPayload_confirmToGUI[28] = 0;
-    for (i = 1; i < 28; i++)
+    startPayload_confirmToGUI[27] = 0;
+    for (i = 0; i < 27; i++)
     {
-        startPayload_confirmToGUI[28] = startPayload_confirmToGUI[28] ^ startPayload_confirmToGUI[i];
+        startPayload_confirmToGUI[27] = startPayload_confirmToGUI[27] ^ startPayload_confirmToGUI[i];
     }
-    send(startPayload_confirmToGUI, 29);
+    send(startPayload_confirmToGUI, 28);
 
     START_ATOMIC();//begin critical section; must be atomic!
     measurementTime = local_T;
@@ -370,7 +369,7 @@ void uart_Init (void)
     U1STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC0bits.U1RXIE = 0;         //disable RX interrupt
-    IPC2bits.U1RXIP = 6;	//Receive interrupt priority
+    IPC2bits.U1RXIP = 5;	//Receive interrupt priority
     U1STAbits.URXISEL = 0;      //Interrupt is set when any character is received and transferred from the UxRSR to the receive buffer; receive buffer has one or more characters
 
 
@@ -401,7 +400,7 @@ void uart_Init (void)
     U2STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC1bits.U2RXIE = 0;        //disable RX interrupt
-    IPC7bits.U2RXIP = 6;	//Receive interrupt priority
+    IPC7bits.U2RXIP = 5;	//Receive interrupt priority
     U2STAbits.URXISEL = 0;
 
 
@@ -415,178 +414,237 @@ void uart_Init (void)
 
     IFS0bits.U1RXIF = 0;        //clear U1RXIF
     U1STAbits.OERR = 0;         //clear overflow error flag
-    junk = U1RXREG;             //clear the input buffer
+    while (1 == U1STAbits.URXDA) {
+        junk = U1RXREG;//clear the input buffer
+    }
     IEC0bits.U1RXIE = 1;         //enable RX interrupt
 
     IFS1bits.U2RXIF = 0;        //clear U2RXIF
     U2STAbits.OERR = 0;         //clear overflow error flag
-    junk = U2RXREG;             //clear the input buffer
+    while (1 == U2STAbits.URXDA) {
+        junk = U2RXREG;//clear the input buffer
+    }
     IEC1bits.U2RXIE = 1;        //enable RX interrupt
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 {
-    static uint8_t numBytesInPayload = 0xFF;
-    static uint8_t payloadBytesReceived =  0;
-
-    uint8_t junk;
+    static uint8_t rxState = RX_IDLE;
     static uint16_t endDataRxPointer = 0;
+    static uint16_t numBytesInPayload = 0;
     static uint8_t USB_RxBuffer[USB_RX_BUF_SZ] ={0};
-
+    uint8_t rxByte;
+    
     IFS0bits.U1RXIF = 0;
 
-    if(0 == USB_5V_DETECT || U1STAbits.OERR == 1)
-    {
-        U1STAbits.OERR = 0;//clear overflow error flag
-        junk = U1RXREG;//clear the input buffer
+    if(0 == USB_5V_DETECT) {
 
-        //clear counters
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
+        if (1 == U1STAbits.OERR) {
+            U1STAbits.OERR = 0;//this also clears U1RXREG
+        } else {
+            while (1 == U1STAbits.URXDA) {
+                rxByte = U1RXREG;//clear the input buffer
+            }
+        }
+
+        rxState = IDLE;
+        numBytesInPayload = 0;
 
         /*
-         * Either USB is connected, or an overflow has occurred.
+         * USB is not connected;
          * Return after the input buffer and counters are cleared.
          */
         return;
     }
 
-    USB_RxBuffer[endDataRxPointer] = U1RXREG;
+    if (1 == U1STAbits.OERR) {
 
-    /*
-     * Try to find the beginning of a payload;
-     * Update payloadBytesReceived
-     */
-
-    if (payloadBytesReceived == 0 && USB_RxBuffer[endDataRxPointer] == 0xFE) {
-
-        payloadBytesReceived = 1;
-
-    } else if (payloadBytesReceived == 0xFF) {
-
-        /*
-         * this is beyond the maximum payload size; reset counters and start
-         * looking for start of frame again
-         */
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
-
-    } else if (payloadBytesReceived != 0) {
-
-        ++payloadBytesReceived;
-
-    }
-
-    /* payloadBytesReceived is now up to date */
-    if (payloadBytesReceived == 3) {
-
-        numBytesInPayload =  payloadBytesReceived + USB_RxBuffer[endDataRxPointer] + 1;
-
-    } else if (payloadBytesReceived == numBytesInPayload) {
-
-        if (numBytesInPayload > (endDataRxPointer + 1)) {
-
-            receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + USB_RX_BUF_SZ + 1, numBytesInPayload);
-
-        } else {
-
-            receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
-
-        }
-
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
-
-    }
-
-    ++endDataRxPointer;
-    if (endDataRxPointer == USB_RX_BUF_SZ) {
-        endDataRxPointer = 0;
-    }
-
-}
-
-void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
-{
-
-    static uint8_t numBytesInPayload = 0xFF;
-    static uint8_t payloadBytesReceived =  0;
-
-    uint8_t junk;
-    static uint16_t endDataRxPointer = 0;
-    static uint8_t BT_RxBuffer[BT_RX_BUF_SZ] ={0};
-
-    IFS1bits.U2RXIF = 0;
-
-    if(1 == USB_5V_DETECT || U2STAbits.OERR == 1)
-    {
-        U2STAbits.OERR = 0;//clear overflow error flag
-        junk = U2RXREG;//clear the input buffer
+        U1STAbits.OERR = 0;//this also clears U1RXREG
 
         //clear counters
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
+        //payloadBytesReceived = 0;
+        //numBytesInPayload = 0xFF;
+
+        transmitError(UART_RX_BUFFER_OVERFLOW);
 
         /*
-         * Either USB is connected, or an overflow has occurred.
-         * return after the input buffer and counters are cleared.
+         * An overflow has occurred
+         * Return after the input buffer and counters are cleared.
          */
         return;
     }
 
-    BT_RxBuffer[endDataRxPointer] = U2RXREG;
+    while (U1STAbits.URXDA) {
+        rxByte = U1RXREG;
+        
+        switch (rxState) {
+            case RX_IDLE:
+                if (START_FLAG == rxByte) {
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                }
+                break;
+            case RX_MID_PAYLOAD:
+                if (ESCAPE_FLAG == rxByte) {
+                    rxState = RX_ESCAPE;
+                } else if (STOP_FLAG == rxByte) {
+                    if (numBytesInPayload > (endDataRxPointer + 1)) {
+                        receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + USB_RX_BUF_SZ + 1, numBytesInPayload);
+                    } else {
+                        receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+                    }
+                    rxState = RX_IDLE;
+                } else if (START_FLAG == rxByte) {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                } else {
+                    USB_RxBuffer[endDataRxPointer] = rxByte;
+                    ++endDataRxPointer;
+                    ++numBytesInPayload;
+                    if (USB_RX_BUF_SZ == endDataRxPointer) {
+                        endDataRxPointer = 0;
+                    }
+                }
+                break;
+            case RX_ESCAPE:
+                if (START_FLAG == rxByte) {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                    break;
+                }
 
-    /*
-     * Try to find the beginning of a payload;
-     * Update payloadBytesReceived
-     */
+                rxByte ^= ESCAPE_XOR;
 
-    if (payloadBytesReceived == 0 && BT_RxBuffer[endDataRxPointer] == 0xFE) {
-
-        payloadBytesReceived = 1;
-
-    } else if (payloadBytesReceived == 0xFF) {
-
-        /*
-         * this is beyond the maximum payload size; reset counters and start
-         * looking for start of frame again
-         */
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
-
-    } else if (payloadBytesReceived != 0) {
-
-        ++payloadBytesReceived;
-
+                if (START_FLAG == rxByte || ESCAPE_FLAG == rxByte || STOP_FLAG == rxByte) {
+                    USB_RxBuffer[endDataRxPointer] = rxByte;
+                    ++endDataRxPointer;
+                    ++numBytesInPayload;
+                    if (USB_RX_BUF_SZ == endDataRxPointer) {
+                        endDataRxPointer = 0;
+                    }
+                    rxState = RX_MID_PAYLOAD;
+                } else {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_IDLE;
+                }
+                break;
+            default:
+                rxState = RX_IDLE;
+                break;
+        }
     }
+}
 
-    /* payloadBytesReceived is now up to date */
-    if (payloadBytesReceived == 3) {
+void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
+{
+    static uint8_t rxState = RX_IDLE;
+    static uint16_t endDataRxPointer = 0;
+    static uint16_t numBytesInPayload = 0;
+    static uint8_t BT_RxBuffer[BT_RX_BUF_SZ] ={0};
+    uint8_t rxByte;
+    
+    IFS1bits.U2RXIF = 0;
 
-        numBytesInPayload =  payloadBytesReceived + BT_RxBuffer[endDataRxPointer] + 1;
+    if(1 == USB_5V_DETECT) {
 
-    } else if (payloadBytesReceived == numBytesInPayload) {
-
-        if (numBytesInPayload > (endDataRxPointer + 1)) {
-
-            receive(true, BT_RxBuffer, endDataRxPointer - numBytesInPayload + BT_RX_BUF_SZ + 1, numBytesInPayload);
-
+        if (1 == U2STAbits.OERR) {
+            U2STAbits.OERR = 0;//this also clears U1RXREG
         } else {
-
-            receive(true, BT_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
-
+            while (1 == U2STAbits.URXDA) {
+                rxByte = U2RXREG;//clear the input buffer
+            }
         }
 
-        payloadBytesReceived = 0;
-        numBytesInPayload = 0xFF;
+        rxState = IDLE;
+        numBytesInPayload = 0;
 
+        /*
+         * USB is connected;
+         * Return after the input buffer and counters are cleared.
+         */
+        return;
     }
 
-    ++endDataRxPointer;
-    if (endDataRxPointer == BT_RX_BUF_SZ) {
-        endDataRxPointer = 0;
+    if (1 == U2STAbits.OERR) {
+
+        U2STAbits.OERR = 0;//this also clears U1RXREG
+
+        //clear counters
+        //payloadBytesReceived = 0;
+        //numBytesInPayload = 0xFF;
+
+        transmitError(UART_RX_BUFFER_OVERFLOW);
+
+        /*
+         * An overflow has occurred
+         * Return after the input buffer and counters are cleared.
+         */
+        return;
     }
 
+    while (U2STAbits.URXDA) {
+        rxByte = U2RXREG;
+        
+        switch (rxState) {
+            case RX_IDLE:
+                if (START_FLAG == rxByte) {
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                }
+                break;
+            case RX_MID_PAYLOAD:
+                if (ESCAPE_FLAG == rxByte) {
+                    rxState = RX_ESCAPE;
+                } else if (STOP_FLAG == rxByte) {
+                    if (numBytesInPayload > (endDataRxPointer + 1)) {
+                        receive(false, BT_RxBuffer, endDataRxPointer - numBytesInPayload + BT_RX_BUF_SZ + 1, numBytesInPayload);
+                    } else {
+                        receive(false, BT_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+                    }
+                    rxState = RX_IDLE;
+                } else if (START_FLAG == rxByte) {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                } else {
+                    BT_RxBuffer[endDataRxPointer] = rxByte;
+                    ++endDataRxPointer;
+                    ++numBytesInPayload;
+                    if (BT_RX_BUF_SZ == endDataRxPointer) {
+                        endDataRxPointer = 0;
+                    }
+                }
+                break;
+            case RX_ESCAPE:
+                if (START_FLAG == rxByte) {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_MID_PAYLOAD;
+                    numBytesInPayload = 0;
+                    break;
+                }
+
+                rxByte ^= ESCAPE_XOR;
+
+                if (START_FLAG == rxByte || ESCAPE_FLAG == rxByte || STOP_FLAG == rxByte) {
+                    BT_RxBuffer[endDataRxPointer] = rxByte;
+                    ++endDataRxPointer;
+                    ++numBytesInPayload;
+                    if (BT_RX_BUF_SZ == endDataRxPointer) {
+                        endDataRxPointer = 0;
+                    }
+                    rxState = RX_MID_PAYLOAD;
+                } else {
+                    transmitError(MALFORMED_PACKET_RECEIVED);
+                    rxState = RX_IDLE;
+                }
+                break;
+            default:
+                rxState = RX_IDLE;
+                break;
+        }
+    }
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
@@ -603,27 +661,26 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
 {
     uint8_t txbuffer[45],i;
 
-    txbuffer[0] = 0xFE;
-    txbuffer[1] = REPORT_VALUES;
-    txbuffer[2] = 0x29;
-    txbuffer[3] = sensor;
+    txbuffer[0] = REPORT_VALUES;
+    txbuffer[1] = 0x29;
+    txbuffer[2] = sensor;
 
-    float_to_bytes(amplitude[0], &txbuffer[4]);
-    float_to_bytes(phaseAngle[0], &txbuffer[8]);
-    float_to_bytes(amplitude[1], &txbuffer[12]);
-    float_to_bytes(phaseAngle[1], &txbuffer[16]);
-    float_to_bytes(amplitude[2], &txbuffer[20]);
-    float_to_bytes(phaseAngle[2], &txbuffer[24]);
-    float_to_bytes(amplitude[3], &txbuffer[28]);
-    float_to_bytes(phaseAngle[3], &txbuffer[32]);
-    float_to_bytes(amplitude[4], &txbuffer[36]);
-    float_to_bytes(phaseAngle[4], &txbuffer[40]);
+    float_to_bytes(amplitude[0], &txbuffer[3]);
+    float_to_bytes(phaseAngle[0], &txbuffer[7]);
+    float_to_bytes(amplitude[1], &txbuffer[11]);
+    float_to_bytes(phaseAngle[1], &txbuffer[15]);
+    float_to_bytes(amplitude[2], &txbuffer[19]);
+    float_to_bytes(phaseAngle[2], &txbuffer[23]);
+    float_to_bytes(amplitude[3], &txbuffer[27]);
+    float_to_bytes(phaseAngle[3], &txbuffer[31]);
+    float_to_bytes(amplitude[4], &txbuffer[35]);
+    float_to_bytes(phaseAngle[4], &txbuffer[39]);
 
-    txbuffer[44] =0;
-    for (i = 1; i < 44; i++) {
-        txbuffer[44] = txbuffer[44] ^ txbuffer[i];
+    txbuffer[43] =0;
+    for (i = 1; i < 43; i++) {
+        txbuffer[43] = txbuffer[43] ^ txbuffer[i];
     }
-    send (txbuffer, 45);
+    send (txbuffer, 44);
 
     if (bridgeADCClip) {
         transmitError(BRIDGE_ADC_CLIP);
@@ -667,13 +724,12 @@ void float_to_bytes(float myFloat, uint8_t *array)
 
 void transmitError(uint8_t errorCode)
 {
-    static uint8_t errorpayload[5];
-    errorpayload[0]= 0xFE;
-    errorpayload[1] = REPORT_ERROR;
-    errorpayload[2] = 0x01;
-    errorpayload[3] = errorCode;
-    errorpayload[4] = errorpayload[1] ^ errorpayload[2] ^ errorpayload[3];
-    send(errorpayload,5);
+    static uint8_t errorpayload[4];
+    errorpayload[0] = REPORT_ERROR;
+    errorpayload[1] = 0x01;
+    errorpayload[2] = errorCode;
+    errorpayload[3] = errorpayload[0] ^ errorpayload[1] ^ errorpayload[2];
+    send(errorpayload, 4);
 }
 
 void send(uint8_t *array, uint8_t numBytes)
@@ -753,20 +809,47 @@ bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
         bufSpaceAvl = usbTxCur - usbTxEnd - 1;
     }
 
-    if (bufSpaceAvl < numBytes)
+    if (bufSpaceAvl < numBytes * 2 + 2)//encoded payload is 2x the size with all escaped characters, + 2 for START and STOP flag
     {
-        spawnTxThread = false;//no message transmitted; a buffer overflow has occurred
+        spawnTxThread = false;//no message transmitted; a buffer overflow may occur
     }
     else
     {
+        usbTxBuf[usbTxEnd] = START_FLAG;
+        ++usbTxEnd;
+        if (usbTxEnd == USB_TX_BUF_SIZE)
+        {
+            usbTxEnd = 0;//this is a circular buffer; wrap back around
+        }
         for (i = 0; i < numBytes; ++i)
         {
-            usbTxBuf[usbTxEnd] = array[i];
-            ++usbTxEnd;
-            if (usbTxEnd == USB_TX_BUF_SIZE)
-            {
-                usbTxEnd = 0;//this is a circular buffer; wrap back around
+            if (array[i] == START_FLAG || array[i] == ESCAPE_FLAG || array[i] == STOP_FLAG) {
+                usbTxBuf[usbTxEnd] = ESCAPE_FLAG;
+                ++usbTxEnd;
+                if (usbTxEnd == USB_TX_BUF_SIZE)
+                {
+                    usbTxEnd = 0;//this is a circular buffer; wrap back around
+                }
+                usbTxBuf[usbTxEnd] = array[i] ^ ESCAPE_XOR;
+                ++usbTxEnd;
+                if (usbTxEnd == USB_TX_BUF_SIZE)
+                {
+                    usbTxEnd = 0;//this is a circular buffer; wrap back around
+                }
+            } else {
+                usbTxBuf[usbTxEnd] = array[i];
+                ++usbTxEnd;
+                if (usbTxEnd == USB_TX_BUF_SIZE)
+                {
+                    usbTxEnd = 0;//this is a circular buffer; wrap back around
+                }
             }
+        }
+        usbTxBuf[usbTxEnd] = STOP_FLAG;
+        ++usbTxEnd;
+        if (usbTxEnd == USB_TX_BUF_SIZE)
+        {
+            usbTxEnd = 0;//this is a circular buffer; wrap back around
         }
     }
     END_ATOMIC();//end critical section
@@ -794,20 +877,47 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
         bufSpaceAvl = btTxCur - btTxEnd - 1;
     }
 
-    if (bufSpaceAvl < numBytes)
+    if (bufSpaceAvl < numBytes * 2 + 2)//encoded payload is 2x the size with all escaped characters, + 2 for START and STOP flag
     {
-        spawnTxThread = false;//no message transmitted; a buffer overflow has occurred
+        spawnTxThread = false;//no message transmitted; a buffer overflow may occur
     }
     else
     {
+        btTxBuf[btTxEnd] = START_FLAG;
+        ++btTxEnd;
+        if (btTxEnd == BT_TX_BUF_SIZE)
+        {
+            btTxEnd = 0;//this is a circular buffer; wrap back around
+        }
         for (i = 0; i < numBytes; ++i)
         {
-            btTxBuf[btTxEnd] = array[i];
-            ++btTxEnd;
-            if (btTxEnd == BT_TX_BUF_SIZE)
-            {
-                btTxEnd = 0;//this is a circular buffer; wrap back around
+            if (array[i] == START_FLAG || array[i] == ESCAPE_FLAG || array[i] == STOP_FLAG) {
+                btTxBuf[btTxEnd] = ESCAPE_FLAG;
+                ++btTxEnd;
+                if (btTxEnd == BT_TX_BUF_SIZE)
+                {
+                    btTxEnd = 0;//this is a circular buffer; wrap back around
+                }
+                btTxBuf[btTxEnd] = array[i] ^ ESCAPE_XOR;
+                ++btTxEnd;
+                if (btTxEnd == BT_TX_BUF_SIZE)
+                {
+                    btTxEnd = 0;//this is a circular buffer; wrap back around
+                }
+            } else {
+                btTxBuf[btTxEnd] = array[i];
+                ++btTxEnd;
+                if (btTxEnd == BT_TX_BUF_SIZE)
+                {
+                    btTxEnd = 0;//this is a circular buffer; wrap back around
+                }
             }
+        }
+        btTxBuf[btTxEnd] = STOP_FLAG;
+        ++btTxEnd;
+        if (btTxEnd == BT_TX_BUF_SIZE)
+        {
+            btTxEnd = 0;//this is a circular buffer; wrap back around
         }
     }
     END_ATOMIC();//end critical section
@@ -834,7 +944,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
     }
 
     //check XOR
-    for (i = 1; i < (sizeOfPayload - 1); i++) {
+    for (i = 0; i < (sizeOfPayload - 1); i++) {
 
         xor_byte = xor_byte ^ payload[i];
 
@@ -844,16 +954,16 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
 
     } else {
 
-        switch (payload[1]) {
+        switch (payload[0]) {
 
             case START_COMMAND:
 
-                decodeStartCommand(rxFromUSB, payload);
+                decodeStartCommand(rxFromUSB, payload, sizeOfPayload);
                 break;
 
             case STOP_COMMAND:
 
-                if (payload[2] != 0) {
+                if (STOP_PAYLOAD_SIZE != sizeOfPayload) {
 
                     transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
 
@@ -870,7 +980,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
                 uint8_t newNumSensors;
                 bool copyInNewTable = false;
 
-                if(payload[2] > MAX_RX_BYTES_TO_FOLLOW) {
+                if(sizeOfPayload > MAX_RX_PAYLOAD_SIZE) {
 
                     transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
 
@@ -882,7 +992,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
                      * check to see if the new table is different than the one
                      * in memory
                      */
-                    newNumSensors = payload[2];
+                    newNumSensors = sizeOfPayload - 3;
 
                     if (newNumSensors == 0) {
 
@@ -899,7 +1009,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
 
                         for (i = 0; i < numberOfSensors; i++) {
 
-                            if (sensorAddressTable[i] != payload[3+i]) {
+                            if (sensorAddressTable[i] != payload[2+i]) {
 
                                 copyInNewTable = true;
                                 sensorRBridgeTableValid = false;
@@ -915,22 +1025,22 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
 
                         for (i = 0; i < numberOfSensors; i++) {
 
-                            sensorAddressTable[i] = payload[3+i];
+                            sensorAddressTable[i] = payload[2+i];
 
                         }
                     }
                     END_ATOMIC();//end critical section
 
-                    payload[1] = CONFIRM_MUX_ADDRESSING;
-                    payload[2] = 0;
-                    payload[3] = payload[1] ^ payload[2];
-                    send(payload, 4);
+                    payload[0] = CONFIRM_MUX_ADDRESSING;
+                    payload[1] = 0;
+                    payload[2] = payload[0] ^ payload[1];
+                    send(payload, 3);
                 }
                 break;
             }
             case BALANCE_WHEASTONE_BRIDGE:
 
-                decodeBalanceBridgeCommand(payload);
+                decodeBalanceBridgeCommand(payload, sizeOfPayload);
                 break;
 
             default:
@@ -942,13 +1052,13 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
     }
 }
 
-void decodeBalanceBridgeCommand(uint8_t *payload)
+void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
 {
     uint8_t confirm_payload[4];
     float GUISpecBalanceVolts;
     float GUISpecBalanceHz;
 
-    if (payload[2] != 8) {
+    if (BALANCE_PAYLOAD_SIZE != sizeOfPayload) {
 
         transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
 
@@ -956,15 +1066,15 @@ void decodeBalanceBridgeCommand(uint8_t *payload)
 
         START_ATOMIC();//begin critical section; must be atomic!
         sensorRBridgeTableValid = false;
-        *(__eds__ uint8_t *)&GUISpecBalanceVolts = payload[3];
-        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 1) = payload[4];
-        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 2) = payload[5];
-        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 3) = payload[6];
+        *(__eds__ uint8_t *)&GUISpecBalanceVolts = payload[2];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 1) = payload[3];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 2) = payload[4];
+        *((__eds__ uint8_t *)&GUISpecBalanceVolts + 3) = payload[5];
 
-        *(__eds__ uint8_t *)&GUISpecBalanceHz = payload[7];
-        *((__eds__ uint8_t *)&GUISpecBalanceHz + 1) = payload[8];
-        *((__eds__ uint8_t *)&GUISpecBalanceHz + 2) = payload[9];
-        *((__eds__ uint8_t *)&GUISpecBalanceHz + 3) = payload[10];
+        *(__eds__ uint8_t *)&GUISpecBalanceHz = payload[6];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 1) = payload[7];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 2) = payload[8];
+        *((__eds__ uint8_t *)&GUISpecBalanceHz + 3) = payload[9];
 
         if (GUISpecBalanceVolts > FULLSCALE_BRIDGE_DAC_VOLTAGE || GUISpecBalanceVolts < 0.0) {
 
@@ -988,11 +1098,10 @@ void decodeBalanceBridgeCommand(uint8_t *payload)
 
         }
 
-        confirm_payload[0] = START_MESSAGE;
-        confirm_payload[1] = CONFIRM_BALANCE_BRIDGE;
-        confirm_payload[2] = 0;
-        confirm_payload[3] = confirm_payload[1] ^ confirm_payload[2];
-        send(confirm_payload, 4);
+        confirm_payload[0] = CONFIRM_BALANCE_BRIDGE;
+        confirm_payload[1] = 0;
+        confirm_payload[2] = confirm_payload[0] ^ confirm_payload[1];
+        send(confirm_payload, 3);
 
         START_ATOMIC();//begin critical section; must be atomic!
         global_state = RAMP_DOWN_COIL_BALANCE_BRIDGE;
@@ -1001,11 +1110,11 @@ void decodeBalanceBridgeCommand(uint8_t *payload)
     }
 }
 
-void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
+void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPayload)
 {
     uint8_t i, k, array[4];
 
-    if (25 != startpayload[2]) {
+    if (START_PAYLOAD_SIZE != sizeOfPayload) {
         transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
         return;
     }
@@ -1019,8 +1128,8 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
     START_ATOMIC();//begin critical section; must be atomic!
     if (rxFromUSB) {
 
-        /* floating point data types begin from startpayload[3], so set k=3 */
-        k=3;
+        /* floating point data types begin from startpayload[2], so set k=2 */
+        k=2;
         for(i=0; i<4; i++) {
             array[i] = startpayload[k];
             ++k;
@@ -1058,12 +1167,12 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
         }
         GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
 
-        GUISpeciedBridgeGainFactor = startpayload[27];
+        GUISpeciedBridgeGainFactor = startpayload[k];
 
     } else {          //bluetooth is connected
-    // floating point data types end at startpayload[22], so set k = 22;
+    // floating point data types end at startpayload[25], so set k = 25;
 
-        k=26;
+        k=25;
         for(i=0; i<4; i++) {
             array[i] = startpayload[k];
             --k;
@@ -1100,7 +1209,7 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[])
         }
         GUISpecifiedA1 = *(__eds__ float *)&array;
 
-        GUISpeciedBridgeGainFactor = startpayload[27];
+        GUISpeciedBridgeGainFactor = startpayload[k];
     }
 
     latest_command = START_COMMAND;

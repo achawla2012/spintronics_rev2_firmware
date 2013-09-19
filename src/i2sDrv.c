@@ -80,7 +80,7 @@ void i2sInit (void)
     TXBUF3 = 0x0000;
 
 // Enable DCI module
-    IPC15bits.DCIIP = 5;    // Set the interrupt priority
+    IPC15bits.DCIIP = 6;    // Set the interrupt priority
     IFS3bits.DCIIF = 0;     // Clear the interrupt flag
     IEC3bits.DCIIE = 1;     // Enable the interrupt
     DCICON1bits.DCIEN = 1;  //DCI Module Enabled
