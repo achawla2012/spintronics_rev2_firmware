@@ -37,18 +37,13 @@ uint8_t getU24CodeFromU25Gain(float u25_gain);
 void setRBridge(uint16_t val)
 {
     uint8_t u20_val;
-    uint8_t u23_val[2];
+    uint8_t u23_val;
 
     if (val > 1535)
     {
         //maximum value is 1535
         val = 1535;
     }
-
-    /*
-     * Using WA tap for U20 / U23; min_code gives RMax, max_code gives Rmin
-     */
-    val = 1535 - val;
 
     /*
      * Bits 8-10 are for U20; grab thes.
@@ -58,7 +53,7 @@ void setRBridge(uint16_t val)
      * explanation.  Multiplying bits 8-10 by 51 gives the desired range 0-255
      */
     u20_val = (val >> 8) * 51;
-    spiTx(U20, 1, &u20_val);
+    spiTx(U20, u20_val);
 
     /*
      * Bits 0-7 are for U23; grab these.
@@ -66,52 +61,26 @@ void setRBridge(uint16_t val)
      * U23 is an AD8400ARZI and requires a 10-bit code, where the lower 8 bits
      * correspond to the resistance value and the upper two bits are an address,
      * which is always 0b00 in ths case.
-     *
-     * SPI transmits MSB first, so the address is copied to index 0 and the
-     * value is copied to index 1.
      */
-    u23_val[0] = 0;
-    u23_val[1] = val & 0x00FF;
-    spiTx(U23, 2, u23_val);
+    u23_val = val & 0x00FF;
+    spiTx(U23, u23_val);
 }
 
 
 /*
  * void setRAmp(uint8_t val)
  *
- * Set the feedback resistance for the Wheatstone bridge buffer amplifier.
+ * Set the input resistance for the Wheatstone bridge buffer amplifier.
  * This controls the gain for that amplifier.  Units are arbitrary;
  *
  * See getRAmpOhms() for a translation algorithm to physical units
- *
- * This is a feedback resistor, so Rmax (val=255) gives most amplifcation;
- * Rmin (val=0) gives least amplification; amplification is approximately
- * proportional to val.  I.e., increase val to increase amplification.
  *
  * uint8_t val: value to set RBridge to
  */
 
 void setRAmp(uint8_t val)
 {
-    uint8_t u24_val[2];
-
-    /*
-     * Using WA tap for U24; min_code gives RMax, max_code gives Rmin
-     */
-    val = 255 - val;
-
-    /*
-     * U24 is an AD8400ARZI and requires a 10-bit code, where the lower 8 bits
-     * correspond to the resistance value and the upper two bits are an address,
-     * which is always 0b00 in ths case.
-     *
-     * SPI transmits MSB first, so the address is copied to index 0 and the
-     * value is copied to index 1.
-     */
-    u24_val[0] = 0;
-    u24_val[1] = val;
-
-    spiTx(U24, 2, u24_val);
+    spiTx(U24, val);
 }
 
 

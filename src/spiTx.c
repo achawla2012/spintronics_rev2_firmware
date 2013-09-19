@@ -23,15 +23,13 @@
 #define SPI_TX_BUF_SIZE 32
 
 /*
- * top four bits of each SPI_TX_BUF 16-bit word are the address
+ * top 4 bits of each SPI_TX_BUF 16-bit word are the address
  */
 #define SPI_TX_ADDR_MASK 0xF000
 /*
- * nextfour bits are the size of the payload
- * values of 1-8 are valid (up to 8 bytes
- * may be transmitted at a time)
+ * bottom 12 bits of each SPI_TX_BUF 16-bit word are the payload
  */
-#define SPI_TX_PL_SIZE_MASK 0x0F00
+#define SPI_TX_PL_MASK 0x0FFF
 
 //function prototypes
 static void spiTxWorker(void);
@@ -42,6 +40,8 @@ static uint16_t spiTxBuf [SPI_TX_BUF_SIZE];
 
 void spiInit(void)
 {
+    uint16_t junk;
+    
     spiTxCur = 0;
     spiTxEnd = 0;
     
@@ -77,7 +77,7 @@ void spiInit(void)
     SPI1CON1bits.MSTEN = 1;// Master Mode
     SPI1CON1bits.DISSCK = 0;// Internal SPI1 clock is enabled
     SPI1CON1bits.DISSDO = 0;// SDO1 pin is controlled by the module
-    SPI1CON1bits.MODE16 = 0;// Communication is byte-wide (8 bits)
+    SPI1CON1bits.MODE16 = 1;// Communication is word-wide (16 bits)
     SPI1CON1bits.CKP = 0;// Idle state for clock is low level
     SPI1CON1bits.CKE = 1;// Serial output data changes on transition from active clock state to idle clock state
     SPI1CON1bits.SSEN = 0;// SS1 pin is not used by the module, pin is controlled by port function
@@ -86,19 +86,20 @@ void spiInit(void)
     SPI1CON1bits.PPRE = 0x1;    //Prim. prscale = 16:1
     SPI1CON2bits.FRMEN = 0;// Framed support is disabled
     SPI1STATbits.SPIROV = 0;// Clear the SPIROV bit
-    SPI1CON2bits.SPIBEN = 1;// Enhanced Buffer is enabled
+    SPI1CON2bits.SPIBEN = 0;// Enhanced Buffer is disabled
     SPI1STATbits.SPISIDL = 0;// Continue the module operation in Idle mode
     SPI1STATbits.SPIEN = 1;// enable SPI module
     IFS0bits.SPI1IF = 0;// Clear the Interrupt flag
-    IEC0bits.SPI1IE = 1;// Enable the interrupt
+    junk = SPI1BUF;// clear the buffer of all input
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
-    uint8_t junk;
+    uint16_t junk;
     
     IFS0bits.SPI1IF = 0;// Clear the Interrupt flag
-    
+    IEC0bits.SPI1IE = 0;// Disable the interrupt to handle CS and more transmission
+
     //Disable all chip select lines
     CS1 = 1;
     CS2 = 1;
@@ -106,108 +107,98 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
     
     SPI1STATbits.SPIROV = 0;// Clear the SPIROV bit
     
-    while (0 == SPI1STATbits.SRXMPT)
-    {
-        //empty the input buffer
-        junk = SPI1BUF;
-    }
+    //clear the buffer of all input
+    junk = SPI1BUF;
     
     //AD5160 requires > 40ns for CS low-high setup before latching input
     NOP();
     NOP();
     NOP();
     
-    spiTxWorker();//continue transmission
+    START_ATOMIC();//begin critical section; must be atomic!
+    ++spiTxCur
+    if (spiTxCur == SPI_TX_BUF_SIZE)
+    {
+        spiTxCur = 0;
+    }
+    if (spiTxCur != spiTxEnd) {
+        spiTxWorker();
+    }
+    END_ATOMIC();//end critical section
 }
 
 static void spiTxWorker(void)
 {
-    uint16_t addr;
-    uint16_t numBytes;
-    uint8_t i;
+    uint8_t addr;
     
     START_ATOMIC();//begin critical section; must be atomic!
-    if (spiTxEnd != spiTxCur)//test to see if there is still data to transmit!
-    {
-        numBytes = (spiTxBuf[spiTxCur] && SPI_TX_PL_SIZE_MASK) >> 8;
-        
-        if (numBytes <= 8)
-        {
-            addr = (spiTxBuf[spiTxCur] && SPI_TX_ADDR_MASK) >> 12;
+    addr = *((uint8_t *)(spiTxBuf + spiTxCur) + 1) & SPI_TX_ADDR_MASK;
             
-            switch (addr)
-            {
-                case U20:
-                    CS1 = 0;
-                    break;
-                case U23:
-                    CS2 = 0;
-                    break;
-                case U24:
-                    CS3 = 0;
-                    break;
-                default:
-                    break;
-            }
-            
+    switch (addr) {
+        case U20:
+            CS1 = 0;
             //AD5160 requires > 15ns for CS high-low setup before sck starts
             NOP();
             NOP();
-            
-            for (i = 0; i < numBytes; ++i)
-            {
-                SPI1BUF = (uint8_t)spiTxBuf[spiTxCur];//only grab the lower 8 bits
-            }
-        }//else discard packet; cannot transmit more than 8 bytes at a time
-        
-        spiTxCur += numBytes;
-        if (spiTxCur >= SPI_TX_BUF_SIZE)
-        {
-            spiTxCur -= SPI_TX_BUF_SIZE;//circular buffer; wrap around
-        }
+            break;
+        case U23:
+            CS2 = 0;
+            //AD8400 requires > 10ns for CS high-low setup before sck starts
+            NOP();
+            break;
+        case U24:
+            CS3 = 0;
+            //AD8400 requires > 10ns for CS high-low setup before sck starts
+            NOP();
+            break;
+        default:
+            break;
     }
-    
+            
+    SPI1BUF = spiTxBuf[spiTxCur] & SPI_TX_PL_MASK;//only grab the lowest 12 bits
     END_ATOMIC();//end critical section
+
+    IEC0bits.SPI1IE = 1;// Enable the interrupt to handle CS and more transmission
+
 }
 
-void spiTx(uint8_t addr, uint8_t numBytes, __eds__ uint8_t *pl)
+void spiTx(uint8_t addr, uint8_t pl)
 {
     bool spawnTxThread = false;
-    uint8_t bufSpaceAvl, header, i;
+    uint8_t bufSpaceAvl;
     
     START_ATOMIC();//begin critical section; must be atomic!
 
-    if (spiTxCur == spiTxEnd)
-    {
+    if (spiTxCur == spiTxEnd) {
         spawnTxThread = true;
         bufSpaceAvl = SPI_TX_BUF_SIZE - 1;
-    }
-    else if (spiTxEnd > spiTxCur)
-    {
+    } else if (spiTxEnd > spiTxCur) {
         bufSpaceAvl = SPI_TX_BUF_SIZE - 1 - (spiTxEnd - spiTxCur);
     }
-    else
-    {
+    else {
         bufSpaceAvl = spiTxCur - spiTxEnd - 1;
     }
 
-    if (bufSpaceAvl < numBytes)
-    {
-        spawnTxThread = false;
-    }
-    else {
-        header = numBytes + (addr << 4);
-        //assign to the uppper byte of spiTxBuf[spiTxEnd]
-        *((uint8_t *)(spiTxBuf + spiTxEnd) + 1) = header;
-        for (i = 0; i < numBytes; ++i)
+    if (bufSpaceAvl > 0) {
+        /*
+         * We will use the top 4 bits of the payload as the address for CS;
+         * this allows us to shift up to 12 bits per transfer.
+         * The AD8400 digipot requires a 10 bit code, where the two MSB are 0.
+         * Thus, more than 8 bits are needed.  
+         *
+         * Make sure to keep the lower 4 bits of the address clear!
+         */
+	spiTxBuf[spiTxEnd] = pl;
+        *(uint8_t *)(spiTxBuf + spiTxEnd) = pl;
+        *((uint8_t *)(spiTxBuf + spiTxEnd) + 1) = addr;//bits 8 and 9 must be 0 for AD8400!
+        ++spiTxEnd;
+        if (spiTxEnd == SPI_TX_BUF_SIZE)
         {
-            spiTxBuf[spiTxEnd] = pl[i];
-            ++spiTxEnd;
-            if (spiTxEnd == SPI_TX_BUF_SIZE)
-            {
-                spiTxEnd = 0;//this is a circular buffer; wrap back around
-            }
+            spiTxEnd = 0;//this is a circular buffer; wrap back around
         }
+    } else {
+        //else discard to avoid overflow
+        spawnTxThread = false;
     }
  
     END_ATOMIC;//end critical section
