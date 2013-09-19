@@ -26,8 +26,8 @@
 #define DEFAULT_SENSOR_ADDRESS 0x00//this is the bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
 #define BT_TX_BUF_SIZE 256
-#define USB_RX_BUF_SZ 512
-#define BT_RX_BUF_SZ 512
+#define USB_RX_BUF_SZ MAX_RX_PAYLOAD_SIZE
+#define BT_RX_BUF_SZ MAX_RX_PAYLOAD_SIZE
 
 #define FTDI_RST_BAR PORTFbits.RF5
 #define USB_5V_DETECT PORTBbits.RB12
@@ -46,7 +46,6 @@ static void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload);
 
 //global variables
 uint8_t global_state = IDLE;
-uint8_t latest_command = 0xFF;
 uint32_t measurementTime;//units are samples
 _Q15 f1;//units are Q15 half-cycles per sample-period
 _Q15 f2;//units are Q15 half-cycles per sample-period
@@ -1211,8 +1210,6 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPa
 
         GUISpeciedBridgeGainFactor = startpayload[k];
     }
-
-    latest_command = START_COMMAND;
 
     //start the timer to spawn the process command thread
     PR4 = DELAY_TO_PROCESS_COMMAND_THREAD;
