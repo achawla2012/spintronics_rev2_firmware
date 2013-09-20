@@ -23,9 +23,10 @@
 #define SPI_TX_BUF_SIZE 32
 
 /*
- * top 4 bits of each SPI_TX_BUF 16-bit word are the address
+ * top 4 bits of each SPI_TX_BUF 16-bit word are the address,
+ * this mask is just to mask off bytes though
  */
-#define SPI_TX_ADDR_MASK 0xF000
+#define SPI_TX_ADDR_MASK 0xF0
 /*
  * bottom 12 bits of each SPI_TX_BUF 16-bit word are the payload
  */
@@ -77,7 +78,7 @@ void spiInit(void)
     SPI1CON1bits.MSTEN = 1;// Master Mode
     SPI1CON1bits.DISSCK = 0;// Internal SPI1 clock is enabled
     SPI1CON1bits.DISSDO = 0;// SDO1 pin is controlled by the module
-    SPI1CON1bits.MODE16 = 1;// Communication is word-wide (16 bits)
+    SPI1CON1bits.MODE16 = 1;// Communication is word-wide (16 bits)//must shift at least 10 bits at a time to AD8400
     SPI1CON1bits.CKP = 0;// Idle state for clock is low level
     SPI1CON1bits.CKE = 1;// Serial output data changes on transition from active clock state to idle clock state
     SPI1CON1bits.SSEN = 0;// SS1 pin is not used by the module, pin is controlled by port function
@@ -186,9 +187,8 @@ void spiTx(uint8_t addr, uint8_t pl)
          * The AD8400 digipot requires a 10 bit code, where the two MSB are 0.
          * Thus, more than 8 bits are needed.  
          *
-         * Make sure to keep the lower 4 bits of the address clear!
+         * Make sure to keep the lowest 2 bits of addr clear for AD8400!
          */
-	spiTxBuf[spiTxEnd] = pl;
         *(uint8_t *)(spiTxBuf + spiTxEnd) = pl;
         *((uint8_t *)(spiTxBuf + spiTxEnd) + 1) = addr;//bits 8 and 9 must be 0 for AD8400!
         ++spiTxEnd;

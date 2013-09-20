@@ -14,7 +14,7 @@
 #define START_COMMAND               0x00
 #define STOP_COMMAND                0x01
 #define CONFIG_MUX_ADDRESSING       0x04
-#define BALANCE_WHEASTONE_BRIDGE    0x05
+#define BALANCE_WHEATSTONE_BRIDGE   0x05
 
 //message type sent to GUI
 #define CONFIRM_START_COMMAND       0x80

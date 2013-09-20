@@ -146,7 +146,7 @@ void processStartCommand(void)
         local_bridge_balance_frequency = DEFAULT_BALANCE_FREQUENCY;//set in case we need to balance the bridge
     } else {
         local_f1 = _Q15ftoi(GUISpecifiedF1 * TWICE_SAMPLE_PERIOD);
-        implementedF1 = _itofQ15(f1) * HALF_SAMPLE_RATE;
+        implementedF1 = _itofQ15(local_f1) * HALF_SAMPLE_RATE;
         local_bridge_balance_frequency = f1;
     }
 
@@ -158,7 +158,7 @@ void processStartCommand(void)
          * every 2 ^ 16 / 2 ^3 = 8192 samples
          */
         local_f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
+        implementedF2 = _itofQ15(local_f2) * HALF_SAMPLE_RATE;
     } else if (GUISpecifiedF2 < 0) {
         transmitError(F2_OUT_OF_RANGE);
         local_f2 = 0;
@@ -168,10 +168,10 @@ void processStartCommand(void)
 
         /*
          * truncate the lowest 3 bits so that the coil tone hits 0rad at least
-         * every 2 ^ 16 / 2 ^3 = 8192 samples
+         * every 2 ^ 16 / 2 ^ 3 = 8192 samples
          */
         local_f2 &= 0xFFF8;
-        implementedF2 = _itofQ15(f2) * HALF_SAMPLE_RATE;
+        implementedF2 = _itofQ15(local_f2) * HALF_SAMPLE_RATE;
     }
 
     local_f1PlusF2OutOfRange = false;
@@ -181,10 +181,10 @@ void processStartCommand(void)
         local_fsum = 0;
         implementedFSum = 0;
     } else {
-        local_fsum = f1 + f2;
+        local_fsum = local_f1 + local_f2;
         implementedFSum = implementedF1 + implementedF2;
     }
-    local_fdiff = _Q15abs(f1 - f2);
+    local_fdiff = _Q15abs(local_f1 - local_f2);
     implementedFDiff = abs(implementedF1 - implementedF2);
 
     tempTime = GUISpecifiedT * SAMPLE_RATE;
@@ -198,7 +198,7 @@ void processStartCommand(void)
         implementedT = minMeasurementSamples / SAMPLE_RATE;
     } else {
         local_T = (uint32_t)tempTime;
-        implementedT = (float)measurementTime / SAMPLE_RATE;
+        implementedT = (float)local_T / SAMPLE_RATE;
     }
 
     switch(GUISpeciedBridgeGainFactor)
@@ -243,23 +243,22 @@ void processStartCommand(void)
         implementedBridgeGain = getBridgeBufGainFromU24Code(u24_code);
     }
 
-    startPayload_confirmToGUI[0] = START_MESSAGE;
-    startPayload_confirmToGUI[1] = CONFIRM_START_COMMAND;
-    startPayload_confirmToGUI[2] = 0x15;
-    float_to_bytes(implementedA1, &startPayload_confirmToGUI[3]);
-    float_to_bytes(implementedF1, &startPayload_confirmToGUI[7]);
-    float_to_bytes(implementedA2, &startPayload_confirmToGUI[11]);
-    float_to_bytes(implementedF2, &startPayload_confirmToGUI[15]);
-    float_to_bytes(implementedT, &startPayload_confirmToGUI[19]);
-    float_to_bytes(implementedBridgeGain, &startPayload_confirmToGUI[23]);
-    startPayload_confirmToGUI[27] = implementedBridgeGainFactor;
+    startPayload_confirmToGUI[0] = CONFIRM_START_COMMAND;
+    startPayload_confirmToGUI[1] = 0x15;
+    float_to_bytes(implementedA1, &startPayload_confirmToGUI[2]);
+    float_to_bytes(implementedF1, &startPayload_confirmToGUI[6]);
+    float_to_bytes(implementedA2, &startPayload_confirmToGUI[10]);
+    float_to_bytes(implementedF2, &startPayload_confirmToGUI[14]);
+    float_to_bytes(implementedT, &startPayload_confirmToGUI[18]);
+    float_to_bytes(implementedBridgeGain, &startPayload_confirmToGUI[22]);
+    startPayload_confirmToGUI[26] = implementedBridgeGainFactor;
 
-    startPayload_confirmToGUI[28] = 0;
-    for (i = 1; i < 28; i++)
+    startPayload_confirmToGUI[27] = 0;
+    for (i = 0; i < 27; i++)
     {
-        startPayload_confirmToGUI[28] = startPayload_confirmToGUI[28] ^ startPayload_confirmToGUI[i];
+        startPayload_confirmToGUI[27] = startPayload_confirmToGUI[27] ^ startPayload_confirmToGUI[i];
     }
-    send(startPayload_confirmToGUI, 29);
+    send(startPayload_confirmToGUI, 28);
 
     START_ATOMIC();//begin critical section; must be atomic!
     measurementTime = local_T;
