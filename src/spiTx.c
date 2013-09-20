@@ -117,9 +117,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
     NOP();
     
     START_ATOMIC();//begin critical section; must be atomic!
-    ++spiTxCur
-    if (spiTxCur == SPI_TX_BUF_SIZE)
-    {
+    ++spiTxCur;
+    if (spiTxCur == SPI_TX_BUF_SIZE) {
         spiTxCur = 0;
     }
     if (spiTxCur != spiTxEnd) {

@@ -375,7 +375,7 @@ void uart_Init (void)
     U1STAbits.UTXISEL0 = 1;     //Interrupt when the last character is shifted out of the Transmit Shift Register and all transmit operations are completed
     U1STAbits.UTXISEL1 = 0;
     IFS0bits.U1TXIF = 0;         //clear TX interrupt flag
-    IEC0bits.U1TXIE = 1;        //enable UART TX Interrupt
+    IEC0bits.U1TXIE = 0;        //enable UART TX Interrupt
     U1STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC0bits.U1RXIE = 0;         //disable RX interrupt
@@ -406,7 +406,7 @@ void uart_Init (void)
     U2STAbits.UTXISEL0 = 1;     //Interrupt when the last character is shifted out of the Transmit Shift Register; all transmit operations are completed
     U2STAbits.UTXISEL1 = 0;
     IFS1bits.U2TXIF = 0;
-    IEC1bits.U2TXIE = 1;
+    IEC1bits.U2TXIE = 0;
     U2STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC1bits.U2RXIE = 0;        //disable RX interrupt
@@ -1060,7 +1060,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
                 }
                 break;
             }
-            case BALANCE_WHEASTONE_BRIDGE:
+            case BALANCE_WHEATSTONE_BRIDGE:
 
                 decodeBalanceBridgeCommand(payload, sizeOfPayload);
                 break;
