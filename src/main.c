@@ -23,6 +23,11 @@
 #include "muxControl.h"
 #include "uartDrv.h"
 
+#ifdef SIMULATION_MODE
+#include "balanceBridge.h"
+#include "fsmStates.h"
+#endif
+
 // Select Internal FRC at POR
 _FOSCSEL(FNOSC_FRC & IESO_OFF);                 // OSC2 Pin Function: OSC2 is Clock Output                                                        // Primary Oscillator Mode: Disabled
 // Enable Clock Switching and Configure POSC in XT mode
@@ -59,12 +64,15 @@ int main(void)
     uart_Init();// Init UART for GUI communication
     
 #ifdef SIMULATION_MODE
-    processStartCommand(0.5, 1000.0, 0.5, 1000.0, .05, (uint8_t)0x04);
+    processStartCommand();
+    global_state = RAMP_DOWN_COIL_RESTART;
+    sensorRBridgeTableValid = true;
 #endif
     while(1)
     {
 #ifdef SIMULATION_MODE
-        spintronicsStateMachine();
+        measurementFSM();
+        //balanceBridgeFSM();
 #endif
     }
 }

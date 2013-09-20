@@ -215,6 +215,7 @@ void measurementFSM(void)
 
 
         case WAIT_FOR_COIL_0RAD:
+
             signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
             if (0 == freqT[1]) {
@@ -237,6 +238,7 @@ void measurementFSM(void)
 
 
         case MEASURE:
+
             measure(bridgeSample, coilSample, freqT, cosOmega1TTimeAligned, cosOmega2TTimeAligned, cosAccumulator, sinAccumulator);
             signalGenerator(RUN_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
@@ -250,7 +252,6 @@ void measurementFSM(void)
 
 
         case CALCULATE_VECTORS:
-        {
 
             signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
@@ -290,7 +291,6 @@ void measurementFSM(void)
             }
             local_state = START_NEW_MEASUREMENT_CYCLE;
             break;
-        }
 
 
         default:

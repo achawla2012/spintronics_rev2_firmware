@@ -53,3 +53,8 @@
 #define RESET_SIGNAL_GEN 0
 #define RESET_BRIDGE_GEN 1
 #define RUN_SIGNAL_GEN 2
+
+//UART RX FSM states
+#define RX_IDLE 0x00
+#define RX_MID_PAYLOAD 0x01
+#define RX_ESCAPE 0x02
