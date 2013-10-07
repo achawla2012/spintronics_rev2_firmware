@@ -326,9 +326,9 @@ void uart_Init (void)
     ANSELBbits.ANSB12 = 0;//make RB12 digital
     TRISBbits.TRISB12 = 1;//set RB12 to be an input so we can monitor whether USB is plugged in or not; RB12 is connected to USB5V via the Si8442
 
-    //RPI45/RB13/PIN28 connects to RX_BT
-    ANSELBbits.ANSB13 = 0;//make RB13 digital
-    // = 0x03;//route U2TX to ???
+    //RP100/RF4/PIN31 connects to RX_BT
+    //PORTF is digital by default
+    RPOR8bits.RP99R = 0x03;//route U2TX to RP99
 
     //RPI46/RB14/PIN29 connects to TX_BT
     ANSELBbits.ANSB14 = 0;//make RB14 digital

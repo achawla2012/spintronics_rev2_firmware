@@ -23,10 +23,6 @@ i2sInit(): Initialise DCI for I2S
 
 void i2sInit (void)
 {
-    /*  NOTE: RFn pins are fixed as digital pins on,
-     *  dsPIC33EPXXXMC806; therefore, there is no
-     *  ANSELF register
-    */
 
     //make RE5, RE6, RE7 digital pins
     ANSELEbits.ANSE5 = 0;

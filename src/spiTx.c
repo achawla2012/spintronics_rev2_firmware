@@ -55,10 +55,10 @@ void spiInit(void)
     ANSELBbits.ANSB1 = 0;
     ANSELBbits.ANSB2 = 0;
 
-    // Enable internal pullups for RB0, RB1, RB2
-    CNPUBbits.CNPUB0 = 1;
-    CNPUBbits.CNPUB1 = 1;
-    CNPUBbits.CNPUB2 = 1;
+    // Disable internal pullups for RB0, RB1, RB2
+    CNPUBbits.CNPUB0 = 0;
+    CNPUBbits.CNPUB1 = 0;
+    CNPUBbits.CNPUB2 = 0;
 
     RPOR5bits.RP82R = 0b000101;// SDO1 (board designator SDI)
     RPOR5bits.RP84R = 0b000110;// SCK1 (board designator CLK)
