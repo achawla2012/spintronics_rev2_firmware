@@ -12,8 +12,11 @@
 
 //function prototypes
 extern void uartInit (void);
-extern void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag);
-extern void transmitError(uint8_t errorCode);
+extern inline void transmitResults(uint8_t sensor, float *phaseAngle,
+                                   float *amplitude, bool bridgeADCClipFlag,
+                                   bool coilADCClipFlag,
+                                   bool bridgeDigitalClipFlag);
+extern inline void transmitError(uint8_t errorCode);
 
 //global variables
 extern uint8_t global_state;

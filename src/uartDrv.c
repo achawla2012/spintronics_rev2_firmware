@@ -23,7 +23,7 @@
 #include "balanceBridge.h"
 #include "uartDrv.h"
 
-#define DEFAULT_SENSOR_ADDRESS 0x00//this is the bit pattern to disable both MUXs
+#define DEFAULT_SENSOR_ADDRESS 0x00//bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
 #define BT_TX_BUF_SIZE 256
 #define USB_RX_BUF_SZ MAX_RX_PAYLOAD_SIZE
@@ -34,19 +34,25 @@
 
 //function prototypes
 static float setVolume(uint8_t channel, float voltage);
-static void send(uint8_t* array, uint8_t numBytes);
-static void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload);
-static void float_to_bytes(float myFloat, uint8_t *array);
-static void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload);
+static inline void send(uint8_t* array, uint8_t numBytes);
+static inline void receive(bool rxFromUSB, uint8_t *array, uint16_t rxPointer,
+                           uint8_t sizeOfPayload);
+static inline void float_to_bytes(float myFloat, uint8_t *array);
+static inline void decodeStartCommand(uint8_t startpayload[],
+                                      uint8_t sizeOfPayload);
 static void usbTxWorker(void);
 static void btTxWorker(void);
-static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
-static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
-static void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload);
-static void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
-                    float GUISpecifiedA2, float GUISpecifiedF2,
-                    float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor,
-                    float GUISpecifiedBridgeAnalogGain);
+static inline bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
+static inline bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
+static inline void decodeBalanceBridgeCommand(uint8_t *payload,
+                                              uint8_t sizeOfPayload);
+static inline void processStartCommand(float GUISpecifiedA1,
+                                       float GUISpecifiedF1,
+                                       float GUISpecifiedA2,
+                                       float GUISpecifiedF2,
+                                       float GUISpecifiedT,
+                                       uint8_t GUISpeciedBridgeGainFactor,
+                                       float GUISpecifiedBridgeAnalogGain);
 
 //global variables
 uint8_t global_state = IDLE;
@@ -72,7 +78,7 @@ static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessibl
 static uint8_t btTxBuf [BT_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static int16_t usbTxCur, usbTxEnd, btTxCur, btTxEnd;//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY//keep it singed so my head doesn't hurt!
 
-void
+static inline void
 processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
                     float GUISpecifiedA2, float GUISpecifiedF2,
                     float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor,
@@ -673,7 +679,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
     btTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
 }
 
-void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip)
+inline void
+transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude,
+                bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip)
 {
     uint8_t txbuffer[45],i;
 
@@ -709,7 +717,8 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
     }
 }
 
-void float_to_bytes(float myFloat, uint8_t *array)
+static inline void
+float_to_bytes(float myFloat, uint8_t *array)
 {
     *array = *((__eds__ uint8_t*)&myFloat);
     ++array;
@@ -720,7 +729,8 @@ void float_to_bytes(float myFloat, uint8_t *array)
     *array = *((__eds__ uint8_t*)&myFloat + 3);
 }
 
-void transmitError(uint8_t errorCode)
+inline void
+transmitError(uint8_t errorCode)
 {
     static uint8_t errorpayload[4];
     errorpayload[0] = REPORT_ERROR;
@@ -730,7 +740,8 @@ void transmitError(uint8_t errorCode)
     send(errorpayload, 4);
 }
 
-void send(uint8_t *array, uint8_t numBytes)
+static inline void
+send(uint8_t *array, uint8_t numBytes)
 {
     if (1 == PORTBbits.RB12)//USB is connected; use USB for transmission
     {
@@ -750,7 +761,8 @@ void send(uint8_t *array, uint8_t numBytes)
     }
 }
 
-void usbTxWorker(void)
+static void
+usbTxWorker(void)
 {
     START_ATOMIC();//begin critical section; must be atomic!
     while (usbTxEnd != usbTxCur)//test to see if there is still data to transmit!
@@ -771,7 +783,8 @@ void usbTxWorker(void)
     END_ATOMIC();//end critical section
 }
 
-void btTxWorker(void)
+static void
+btTxWorker(void)
 {
     START_ATOMIC();//begin critical section; must be atomic!
     while (btTxEnd != btTxCur)//test to see if there is still data to transmit!
@@ -792,7 +805,8 @@ void btTxWorker(void)
     END_ATOMIC();//end critical section
 }
 
-bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
+static inline bool
+copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
 {
     bool spawnTxThread = false;
     uint16_t bufSpaceAvl, i;
@@ -860,7 +874,8 @@ bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes)
     return spawnTxThread;
 }
 
-bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
+static inline bool
+copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
 {
     bool spawnTxThread = false;
     uint16_t bufSpaceAvl, i;
@@ -928,7 +943,9 @@ bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes)
     return spawnTxThread;
 }
 
-void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload)
+static inline void
+receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer,
+         uint8_t sizeOfPayload)
 {
     uint16_t rx_buf_sz;
     uint8_t i, payload[MAX_RX_PAYLOAD_SIZE] = {0}, xor_byte = 0;
@@ -1056,7 +1073,8 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
     }
 }
 
-void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
+static inline void
+decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
 {
     uint8_t confirm_payload[4];
     float GUISpecBalanceVolts;
@@ -1114,7 +1132,8 @@ void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
     }
 }
 
-static inline void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
+static inline void
+decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
 {
     uint8_t i, k, array[4];
     float GUISpecifiedA1;
