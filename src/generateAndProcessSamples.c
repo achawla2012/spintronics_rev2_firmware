@@ -25,13 +25,12 @@
 #include "spintronicsStructs.h"
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip);
-static void signalGenerator(unsigned char runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 local_a2, _Q15 local_f2);
-static void shiftRegister( _Q15 cosOmega1T, _Q15 cosOmega2T, _Q15 *cosOmega1TTimeAligned, _Q15 *cosOmega2TTimeAligned);
+static void signalGenerator(unsigned char runOrReset, angle_array_t *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 local_a2, _Q15 local_f2);
 static void measure(_Q15 bridgeSample,
 #ifdef MEASURE_F2_AT_COIL
                     _Q15 coilSample,
 #endif
-                    _Q15 *freqT, _Q15 cosOmega1TTimeAligned,
+                    angle_array_t *freqT, _Q15 cosOmega1TTimeAligned,
 #if defined(MEASURE_F2_AT_BRIGE) || defined(MEASURE_F2_AT_COIL)
                     _Q15 cosOmega2TTimeAligned,
 #endif
@@ -53,11 +52,9 @@ void measurementFSM(void)
     static uint8_t sensorAddress;
     static uint32_t timer;
     static uint8_t sensorIndex;
-    _Q15 cosOmega1T;//fractions of full-scale //aligned to compensate for ADCDAC_GROUP_DELAY
-    _Q15 cosOmega2T;//fractions of full-scale //aligned to compensate for ADCDAC_GROUP_DELAY
-    static _Q15 cosOmega1TTimeAligned;//fractions of full-scale
-    static _Q15 cosOmega2TTimeAligned;//fractions of full-scale
-    static _Q15 freqT[6];//array contents: 2*f1*t, 2*f2*t, 2*f1*(t + ADCDAC_GROUP_DELAY), 2*f2*(t + ADCDAC_GROUP_DELAY), 2*fdiff*(t + ADCDAC_GROUP_DELAY), 2*fsum*(t + ADCDAC_GROUP_DELAY)
+    _Q15 cosOmega1T;//fractions of full-scale
+    _Q15 cosOmega2T;//fractions of full-scale
+    static angle_array_t freqT;//array contents: 2*f1*t, 2*f2*t, 2*fdiff*t, 2*fsum*t
     static accumulator_t cosAccumulator;
     static accumulator_t sinAccumulator;
     static bool bridgeADCClip;
@@ -107,8 +104,7 @@ void measurementFSM(void)
             if (current_a2 != 0) {
                 --current_a2;
             }
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             if (0 == current_a2) {
                 local_state = IDLE;
             }
@@ -120,8 +116,7 @@ void measurementFSM(void)
             if (current_a2 != 0) {
                 --current_a2;
             }
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             if (0 == current_a2) {
                 local_state = START_MEASUREMENT_FSM;
             }
@@ -133,8 +128,7 @@ void measurementFSM(void)
             if (current_a2 != 0) {
                 --current_a2;
             }
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             if (0 == current_a2) {
                 local_state = START_BRIDGE_BALANCE_FSM;
             }
@@ -179,7 +173,7 @@ void measurementFSM(void)
 
             } else {
                 sensorIndex = 0;
-                signalGenerator(RESET_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
+                signalGenerator(RESET_SIGNAL_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
                 local_state = RAMP_UP_COIL;
                 current_a2 = 0;
                 setRAmp(u24_code);
@@ -189,8 +183,7 @@ void measurementFSM(void)
 
         case RAMP_UP_COIL:
 
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             ++current_a2;
             if (current_a2 == local_a2) {
                 local_state = START_NEW_MEASUREMENT_CYCLE;
@@ -203,8 +196,7 @@ void measurementFSM(void)
             uint16_t r_bridge;
 
             timer = 0;
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             cosAccumulator.bridge_f1 = 0;
 #ifdef MEASURE_F2_AT_BRIDGE
             cosAccumulator.bridge_f2 = 0;
@@ -242,9 +234,8 @@ void measurementFSM(void)
 
         case WAIT_FOR_COIL_0RAD:
 
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
-            if (0 == freqT[1]) {
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
+            if (0 == freqT.two_f2_t) {
                 local_state = START_SIGNAL_GEN;
             }
             break;
@@ -252,8 +243,7 @@ void measurementFSM(void)
 
         case START_SIGNAL_GEN:
 
-            signalGenerator(RUN_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RUN_SIGNAL_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             ++timer;
             if (timer == MEASUREMENT_SETUP_TIME)
             {
@@ -269,13 +259,12 @@ void measurementFSM(void)
 #ifdef MEASURE_F2_AT_COIL
                     coilSample,
 #endif
-                    freqT, cosOmega1TTimeAligned,
+                    &freqT, cosOmega1T,
 #if defined(MEASURE_F2_AT_BRIGE) || defined(MEASURE_F2_AT_COIL)
-                    cosOmega2TTimeAligned,
+                    cosOmega2T,
 #endif
                     &cosAccumulator, &sinAccumulator);
-            signalGenerator(RUN_SIGNAL_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RUN_SIGNAL_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             ++timer;
             if (timer == measurementTime)
             {
@@ -287,8 +276,7 @@ void measurementFSM(void)
 
         case CALCULATE_VECTORS:
 
-            signalGenerator(RESET_BRIDGE_GEN, freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            shiftRegister(cosOmega1T, cosOmega2T, &cosOmega1TTimeAligned, &cosOmega2TTimeAligned);
+            signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
 
             //capture necessary variables for processing the vector calc thread
             sensorAddressCapture = sensorAddress;
@@ -391,39 +379,20 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
     }
 }
 
-void shiftRegister(_Q15 cosOmega1T, _Q15 cosOmega2T, _Q15 *cosOmega1TTimeAligned, _Q15 *cosOmega2TTimeAligned)
-{
-    static _Q15 delayArrayA[ADCDAC_GROUP_DELAY];
-    static _Q15 delayArrayB[ADCDAC_GROUP_DELAY];
-
-    static int16_t pointer = 0;
-    int16_t pointerPlusOne = pointer + 1;
-    if(pointerPlusOne == ADCDAC_GROUP_DELAY)
-    {
-        pointerPlusOne = 0;
-    }
-    delayArrayA[pointer] = cosOmega1T;
-    delayArrayB[pointer] = cosOmega2T;
-    *cosOmega1TTimeAligned = delayArrayA[pointerPlusOne];
-    *cosOmega2TTimeAligned = delayArrayB[pointerPlusOne];
-    ++pointer;
-        if(pointer == ADCDAC_GROUP_DELAY)
-    {
-        pointer = 0;
-    }
-}
-
-void signalGenerator(uint8_t runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 current_a2, _Q15 local_f2)
+static inline void
+signalGenerator(uint8_t runOrReset, angle_array_t *freqT,
+                __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T,
+                _Q15 current_a2, _Q15 local_f2)
 {
     if (runOrReset == RUN_SIGNAL_GEN) {
 
-        #ifdef TRIG_USES_LUT
-        *cosOmega1T = _Q15cosPILUT(freqT[0]);//generating cos(omega1 * t)
-        *cosOmega2T = _Q15cosPILUT(freqT[1]);//generating cos(omega2 * t)
-        #else
-        *cosOmega1T = _Q15cosPI(freqT[0]);//generating cos(omega1 * t)
-        *cosOmega2T = _Q15cosPI(freqT[1]);//generating cos(omega2 * t)
-        #endif
+#ifdef TRIG_USES_LUT
+        *cosOmega1T = _Q15cosPILUT(freqT->two_f1_t);//generating cos(omega1 * t)
+        *cosOmega2T = _Q15cosPILUT(freqT->two_f2_t);//generating cos(omega2 * t)
+#else
+        *cosOmega1T = _Q15cosPI(freqT->two_f1_t);//generating cos(omega1 * t)
+        *cosOmega2T = _Q15cosPI(freqT->two_f2_t);//generating cos(omega2 * t)
+#endif
 
         uint32_t tempSample;
         if (a1 == 0x7FFF) {
@@ -455,19 +424,17 @@ void signalGenerator(uint8_t runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, 
         TXBUF3 = RXBUF3;
         #endif
 
-        freqT[0] += f1;
-        freqT[1] += local_f2;
-        freqT[2] += f1;
-        freqT[3] += local_f2;
-        freqT[4] += fdiff;
-        freqT[5] += fsum;
+        freqT->two_f1_t += f1;
+        freqT->two_f2_t += local_f2;
+        freqT->two_fdiff_t += fdiff;
+        freqT->two_fsum_t += fsum;
 
     } else if (runOrReset == RESET_BRIDGE_GEN) {
 
         #ifdef TRIG_USES_LUT
-        *cosOmega2T = _Q15cosPILUT(freqT[1]);//generating cos(omega2 * t)
+        *cosOmega2T = _Q15cosPILUT(freqT->two_f2_t);//generating cos(omega2 * t)
         #else
-        *cosOmega2T = _Q15cosPI(freqT[1]);//generating cos(omega2 * t)
+        *cosOmega2T = _Q15cosPI(freqT->two_f2_t);//generating cos(omega2 * t)
         #endif
 
         uint32_t tempSample;
@@ -490,17 +457,15 @@ void signalGenerator(uint8_t runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, 
         TXBUF3 = RXBUF3;
         #endif
 
-        freqT[1] += local_f2;
+        freqT->two_f2_t += local_f2;
 
         *cosOmega1T = 0;
         TXBUF0 = 0x0000;
         TXBUF1 = 0x0000;
 
-        freqT[0] = (f1 * ADCDAC_GROUP_DELAY);//advance to compensate for ADC/DAC FIR group delay
-        freqT[2] = 0x0000;
-        freqT[3] = 0x0000;
-        freqT[4] = 0x0000;
-        freqT[5] = 0x0000;
+        freqT->two_f1_t = 0x0000;
+        freqT->two_fdiff_t = 0x0000;
+        freqT->two_fsum_t = 0x0000;
 
     } else {
 
@@ -511,12 +476,10 @@ void signalGenerator(uint8_t runOrReset, _Q15 *freqT, __eds__ _Q15 *cosOmega1T, 
         TXBUF2 = 0x0000;
         TXBUF3 = 0x0000;
         
-        freqT[0] = (f1 * ADCDAC_GROUP_DELAY);//advance to compensate for ADC/DAC FIR group delay
-        freqT[1] = (local_f2 * ADCDAC_GROUP_DELAY);//advance to compensate for ADC/DAC FIR group delay
-        freqT[2] = 0x0000;
-        freqT[3] = 0x0000;
-        freqT[4] = 0x0000;
-        freqT[5] = 0x0000;
+        freqT->two_f1_t = 0x0000;
+        freqT->two_f2_t = 0x0000;
+        freqT->two_fdiff_t = 0x0000;
+        freqT->two_fsum_t = 0x0000;
     }
 }
 
@@ -524,9 +487,9 @@ void measure(_Q15 bridgeSample,
 #ifdef MEASURE_F2_AT_COIL
              _Q15 coilSample,
 #endif
-              _Q15 *freqT, _Q15 cosOmega1TTimeAligned,
+              angle_array_t *freqT, _Q15 cosOmega1T,
 #if defined(MEASURE_F2_AT_BRIGE) || defined(MEASURE_F2_AT_COIL)
-              _Q15 cosOmega2TTimeAligned,
+              _Q15 cosOmega2T,
 #endif
               accumulator_t *cosAccumulator,
               accumulator_t *sinAccumulator)
@@ -539,28 +502,28 @@ void measure(_Q15 bridgeSample,
      int32_t coilBySinF2T, coilByCosF2T;
 #endif
 #ifdef TRIG_USES_LUT
-    _Q15 cosFDiffT = _Q15cosPILUT(freqT[4]);
-    _Q15 cosFSumT = _Q15cosPILUT(freqT[5]);
-    _Q15 sinF1T = _Q15sinPILUT(freqT[2]);
+    _Q15 cosFDiffT = _Q15cosPILUT(freqT->two_fdiff_t);
+    _Q15 cosFSumT = _Q15cosPILUT(freqT->two_fsum_t);
+    _Q15 sinF1T = _Q15sinPILUT(freqT->two_f1_t);
 #if defined(MEASURE_F2_AT_BRIGE) || defined(MEASURE_F2_AT_COIL)
-    _Q15 sinF2T = _Q15sinPILUT(freqT[3]);
+    _Q15 sinF2T = _Q15sinPILUT(freqT->two_f2_t);
 #endif
-    _Q15 sinFDiffT = _Q15sinPILUT(freqT[4]);
-    _Q15 sinFSumT = _Q15sinPILUT(freqT[5]);
+    _Q15 sinFDiffT = _Q15sinPILUT(freqT->two_fdiff_t);
+    _Q15 sinFSumT = _Q15sinPILUT(freqT->two_fsum_t);
 #else
-    _Q15 cosFDiffT = _Q15cosPI(freqT[4]);
-    _Q15 cosFSumT = _Q15cosPI(freqT[5]);
-    _Q15 sinF1T = _Q15sinPI(freqT[2]);
+    _Q15 cosFDiffT = _Q15cosPI(freqT->two_fdiff_t);
+    _Q15 cosFSumT = _Q15cosPI(freqT->two_fsum_t);
+    _Q15 sinF1T = _Q15sinPI(freqT->two_f1_t);
 #if defined(MEASURE_F2_AT_BRIGE) || defined(MEASURE_F2_AT_COIL)
-    _Q15 sinF2T = _Q15sinPI(freqT[3]);
+    _Q15 sinF2T = _Q15sinPI(freqT->two_f2_t);
 #endif
-    _Q15 sinFDiffT = _Q15sinPI(freqT[4]);
-    _Q15 sinFSumT = _Q15sinPI(freqT[5]);
+    _Q15 sinFDiffT = _Q15sinPI(freqT->two_fdiff_t);
+    _Q15 sinFSumT = _Q15sinPI(freqT->two_fsum_t);
 #endif
-    bridgeByCosF1T = asm16X16Mult(bridgeSample, cosOmega1TTimeAligned);
+    bridgeByCosF1T = asm16X16Mult(bridgeSample, cosOmega1T);
     cosAccumulator->bridge_f1 += bridgeByCosF1T;
 #ifdef MEASURE_F2_AT_BRIDGE
-    bridgeByCosF2T = asm16X16Mult(bridgeSample, cosOmega2TTimeAligned);
+    bridgeByCosF2T = asm16X16Mult(bridgeSample, cosOmega2T);
     cosAccumulator->bridge_f2 += bridgeByCosF2T;
 #endif
     bridgeByCosFDiffT = asm16X16Mult(bridgeSample, cosFDiffT);
@@ -568,7 +531,7 @@ void measure(_Q15 bridgeSample,
     bridgeByCosFSumT =  asm16X16Mult(bridgeSample, cosFSumT);
     cosAccumulator->bridge_fsum += bridgeByCosFSumT;
 #ifdef MEASURE_F2_AT_COIL
-    coilByCosF2T = asm16X16Mult(coilSample, cosOmega2TTimeAligned);
+    coilByCosF2T = asm16X16Mult(coilSample, cosOmega2T);
     cosAccumulator->coil_f2 += coilByCosF2T;
 #endif
     bridgeBySinF1T = asm16X16Mult(bridgeSample, sinF1T);

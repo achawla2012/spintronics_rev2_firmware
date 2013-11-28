@@ -7,6 +7,8 @@
  * questions or support:
  * michael.sandstedt@gmail.com
  */
+#ifndef SPINTRONICS_INCLUDES_H
+#define	SPINTRONICS_INCLUDES_H
 
 #include "p33exxxx.h"
 #include <math.h>
@@ -15,4 +17,4 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-
+#endif

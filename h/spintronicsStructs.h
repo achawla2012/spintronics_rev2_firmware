@@ -9,6 +9,9 @@
 #include "spintronicsConfig.h"
 #endif
 
+#ifndef SPINTRONICS_INCLUDES_H
+#inlcude "spintronicsInlcudes.h"
+#endif
 #ifndef SPINTRONICS_STRUCTS_H
 #define	SPINTRONICS_STRUCTS_H
 
@@ -48,5 +51,11 @@ typedef struct double_array_s {
 #endif
 } double_array_t;
 
-#endif	/* SPINTRONICS_STRUCTS_H */
+typedef struct angle_array_s {
+    _Q15 two_f1_t;
+    _Q15 two_f2_t;
+    _Q15 two_fdiff_t;
+    _Q15 two_fsum_t;
+} angle_array_t;
 
+#endif	/* SPINTRONICS_STRUCTS_H */

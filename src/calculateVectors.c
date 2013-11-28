@@ -139,9 +139,9 @@ void calculateFinalVectors(void)
     if(amplitude.coil_f2 < 0) {//make sure amplitude is positive
         amplitude.coil_f2 = fabsf(amplitude.coil_f2);
         if (phaseAngle.coil_f2 < 0) {
-            phaseAngle.coil_f2 = phaseAngle[i] + M_PI_2;
+            phaseAngle.coil_f2 = phaseAngle.coil_f2 + M_PI_2;
         } else {
-            phaseAngle.coil_f2 = phaseAngle[i] - M_PI_2;
+            phaseAngle.coil_f2 = phaseAngle.coil_f2 - M_PI_2;
         }
     }
 #endif
@@ -275,7 +275,7 @@ void calculateFinalVectors(void)
 
     phaseAngle32.bridge_f1 = phaseAngle.bridge_f1;
 #ifdef MEASURE_F2_AT_BRIDGE
-    phaseAngle32.bridge_f2 = phaseAngleb.bridge_f2;
+    phaseAngle32.bridge_f2 = phaseAngle.bridge_f2;
 #endif
     phaseAngle32.bridge_fdiff = phaseAngle.bridge_fdiff;
     phaseAngle32.bridge_fsum = phaseAngle.bridge_fsum;
