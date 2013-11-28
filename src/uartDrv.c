@@ -1130,12 +1130,6 @@ static inline void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayl
         return;
     }
 
-    /*endianness of data stream is different for USB and bluetooth*/
-    /*
-     * TODO: this is ridiculous.  no, endianness is not different; the mobile
-     * GUI is screwed up.
-     */
-
     /* floating point data types begin from startpayload[2], so set k=2 */
     k=2;
     for(i=0; i<4; i++) {
