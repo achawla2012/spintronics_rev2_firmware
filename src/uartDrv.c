@@ -37,7 +37,7 @@ static float setVolume(uint8_t channel, float voltage);
 static void send(uint8_t* array, uint8_t numBytes);
 static void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOfPayload);
 static void float_to_bytes(float myFloat, uint8_t *array);
-static void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPayload);
+static void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload);
 static void usbTxWorker(void);
 static void btTxWorker(void);
 static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
@@ -711,13 +711,6 @@ void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool b
 
 void float_to_bytes(float myFloat, uint8_t *array)
 {
-    /* endianness of data stream is different for USB and bluetooth*/
-    /*
-     * TODO: this is ridiculous.  no, endianness is not different; the mobile
-     * GUI is screwed up.
-     */
-    if (USB_5V_DETECT)
-    {
     *array = *((__eds__ uint8_t*)&myFloat);
     ++array;
     *array = *((__eds__ uint8_t*)&myFloat + 1);
@@ -725,17 +718,6 @@ void float_to_bytes(float myFloat, uint8_t *array)
     *array =*((__eds__ uint8_t*)&myFloat + 2);
     ++array;
     *array = *((__eds__ uint8_t*)&myFloat + 3);
-    }
-    else    // bluetooth is connected
-    {
-    *array = *((__eds__ uint8_t*)&myFloat + 3);
-    --array;
-    *array = *((__eds__ uint8_t*)&myFloat + 2);
-    --array;
-    *array =*((__eds__ uint8_t*)&myFloat + 1);
-    --array;
-    *array = *((__eds__ uint8_t*)&myFloat);
-    }
 }
 
 void transmitError(uint8_t errorCode)
@@ -980,7 +962,7 @@ void receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer, uint8_t sizeOf
 
             case START_COMMAND:
 
-                decodeStartCommand(rxFromUSB, payload, sizeOfPayload);
+                decodeStartCommand(payload, sizeOfPayload);
                 break;
 
             case STOP_COMMAND:
@@ -1132,7 +1114,7 @@ void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
     }
 }
 
-void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPayload)
+void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
 {
     uint8_t i, k, array[4];
 
@@ -1148,91 +1130,46 @@ void decodeStartCommand(bool rxFromUSB, uint8_t startpayload[], uint8_t sizeOfPa
      */
 
     START_ATOMIC();//begin critical section; must be atomic!
-    if (rxFromUSB) {
 
-        /* floating point data types begin from startpayload[2], so set k=2 */
-        k=2;
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-
-        GUISpecifiedA1 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-        GUISpecifiedF1 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-        GUISpecifiedA2 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-        GUISpecifiedF2 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-        GUISpecifiedT = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            ++k;
-        }
-        GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
-
-        GUISpeciedBridgeGainFactor = startpayload[k];
-
-    } else {          //bluetooth is connected
-    // floating point data types end at startpayload[25], so set k = 25;
-
-        k=25;
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedT = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedF2 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedA2 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedF1 = *(__eds__ float *)&array;
-
-        for(i=0; i<4; i++) {
-            array[i] = startpayload[k];
-            --k;
-        }
-        GUISpecifiedA1 = *(__eds__ float *)&array;
-
-        GUISpeciedBridgeGainFactor = startpayload[k];
+    /* floating point data types begin from startpayload[2], so set k=2 */
+    k=2;
+    for(i=0; i<4; i++) {
+        array[i] = startpayload[k];
+        ++k;
     }
+
+    GUISpecifiedA1 = *(__eds__ float *)&array;
+
+    for(i=0; i<4; i++) {
+        array[i] = startpayload[k];
+        ++k;
+    }
+    GUISpecifiedF1 = *(__eds__ float *)&array;
+    for(i=0; i<4; i++) {
+        array[i] = startpayload[k];
+        ++k;
+    }
+    GUISpecifiedA2 = *(__eds__ float *)&array;
+
+    for(i=0; i<4; i++) {
+    array[i] = startpayload[k];
+        ++k;
+    }
+    GUISpecifiedF2 = *(__eds__ float *)&array;
+
+    for(i=0; i<4; i++) {
+        array[i] = startpayload[k];
+        ++k;
+    }
+    GUISpecifiedT = *(__eds__ float *)&array;
+
+    for(i=0; i<4; i++) {
+        array[i] = startpayload[k];
+        ++k;
+    }
+    GUISpecifiedBridgeAnalogGain = *(__eds__ float *)&array;
+
+    GUISpeciedBridgeGainFactor = startpayload[k];
 
     //start the timer to spawn the process command thread
     PR4 = DELAY_TO_PROCESS_COMMAND_THREAD;
