@@ -8,13 +8,16 @@
  * questions or support:
  * michael.sandstedt@gmail.com
  */
+#ifndef SPINTRONICS_STRUCTS_H
+#include "spintronicsStructs.h"
+#endif
 
 extern inline void spawnVectorCalcThread(uint16_t delayCycles, uint8_t sensorIndex, uint64_t *cosAccumulator, uint64_t *sinAccumulator, bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip, bool f1PlusF2OutOfRange, float implementedBridgeGain);
 extern void calculateFinalVectors(void);
 
 extern uint8_t sensorAddressCapture;
-extern int64_t cosAccumulatorCapture[5];
-extern int64_t sinAccumulatorCapture[5];
+extern accumulator_t cosAccumulatorCapture;
+extern accumulator_t sinAccumulatorCapture;
 extern bool bridgeADCClipCapture;
 extern bool coilADCClipCapture;
 extern bool bridgeDigitalClipCapture;

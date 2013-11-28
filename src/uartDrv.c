@@ -22,6 +22,7 @@
 #include "commsDefines.h"
 #include "balanceBridge.h"
 #include "uartDrv.h"
+#include "spintronicsStructs.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
@@ -680,8 +681,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 }
 
 inline void
-transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude,
-                bool bridgeADCClip, bool coilADCClip, bool bridgeDigitalClip)
+transmitResults(uint8_t sensor, __eds__ float_array_t *phaseAngle,
+                __eds__ float_array_t *amplitude, bool bridgeADCClip,
+                bool coilADCClip, bool bridgeDigitalClip)
 {
     uint8_t txbuffer[45],i;
 
@@ -689,16 +691,29 @@ transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude,
     txbuffer[1] = 0x29;
     txbuffer[2] = sensor;
 
-    float_to_bytes(amplitude[0], &txbuffer[3]);
-    float_to_bytes(phaseAngle[0], &txbuffer[7]);
-    float_to_bytes(amplitude[1], &txbuffer[11]);
-    float_to_bytes(phaseAngle[1], &txbuffer[15]);
-    float_to_bytes(amplitude[2], &txbuffer[19]);
-    float_to_bytes(phaseAngle[2], &txbuffer[23]);
-    float_to_bytes(amplitude[3], &txbuffer[27]);
-    float_to_bytes(phaseAngle[3], &txbuffer[31]);
-    float_to_bytes(amplitude[4], &txbuffer[35]);
-    float_to_bytes(phaseAngle[4], &txbuffer[39]);
+#if !defined(MESURE_F2_AT_BRIDGE) && !defined(MESURE_F2_AT_COIL)
+    float ZERO = 0.0;
+#endif
+    float_to_bytes(amplitude->bridge_f1, &txbuffer[3]);
+    float_to_bytes(phaseAngle->bridge_f1, &txbuffer[7]);
+#ifdef MEASURE_F2_AT_BRIDGE
+    float_to_bytes(amplitude->bridge_f2, &txbuffer[11]);
+    float_to_bytes(phaseAngle->bridge_f2, &txbuffer[15]);
+#else
+    float_to_bytes(ZERO, &txbuffer[11]);
+    float_to_bytes(ZERO, &txbuffer[15]);
+#endif
+    float_to_bytes(amplitude->bridge_fdiff, &txbuffer[19]);
+    float_to_bytes(phaseAngle->bridge_fdiff, &txbuffer[23]);
+    float_to_bytes(amplitude->bridge_fsum, &txbuffer[27]);
+    float_to_bytes(phaseAngle->bridge_fsum, &txbuffer[31]);
+#ifdef MEASURE_F2_AT_COIL
+    float_to_bytes(amplitude->coil_f2, &txbuffer[35]);
+    float_to_bytes(phaseAngle->coil_f2, &txbuffer[39]);
+#else
+    float_to_bytes(ZERO, &txbuffer[35]);
+    float_to_bytes(ZERO, &txbuffer[39]);
+#endif
 
     txbuffer[43] =0;
     for (i = 1; i < 43; i++) {

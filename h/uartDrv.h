@@ -10,12 +10,17 @@
  * michael.sandstedt@gmail.com
  */
 
+#ifndef SPINTRONICS_STRUCTS_H
+#include "spintronicsStructs.h"
+#endif
+
 //function prototypes
 extern void uartInit (void);
-extern inline void transmitResults(uint8_t sensor, float *phaseAngle,
-                                   float *amplitude, bool bridgeADCClipFlag,
-                                   bool coilADCClipFlag,
-                                   bool bridgeDigitalClipFlag);
+extern inline void transmitResults(uint8_t sensor,
+                                   __eds__ float_array_t *phaseAngle,
+                                   __eds__ float_array_t *amplitude,
+                                   bool bridgeADCClip, bool coilADCClip,
+                                   bool bridgeDigitalClip);
 extern inline void transmitError(uint8_t errorCode);
 
 //global variables

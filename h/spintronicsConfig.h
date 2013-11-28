@@ -10,7 +10,11 @@
  * michael.sandstedt@gmail.com
  */
 
+#ifndef SPINTRONICS_CONFIG_H
+#define	SPINTRONICS_CONFIG_H
+
 //#define MEASURE_F2_AT_BRIDGE
+//#define MEASURE_F2_AT_COIL
 //#define SIMULATION_MODE //un-comment this for a simulation specific build
 //#define CODEC_USES_I2S //un-comment this if tx/rx samples from the CODEC are in I2S format; otherwise samples are left-justified
 #define TRIG_USES_LUT//un-comment this to enable the LUT-based sin / cos functions; otherwise, the C30 _Q15cosPI(), _Q15sinPI() functions are used
@@ -57,3 +61,5 @@
 //#define PROBE_BRIDGE_X_COS_FSUM_T_PLUS_PHI
 //#define PROBE_BRIDGE_X_COS_FDIFF_T_PLUS_PHI
 //#define PROBE_COIL_X_COS_F2_T_PLUS_PHI
+
+#endif
