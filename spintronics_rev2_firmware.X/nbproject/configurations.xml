@@ -20,6 +20,7 @@
       <itemPath>../h/timerDrv.h</itemPath>
       <itemPath>../h/commsDefines.h</itemPath>
       <itemPath>../h/constants.h</itemPath>
+      <itemPath>../h/spintronicsStructs.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -60,7 +61,7 @@
         <targetDevice>dsPIC33EP512GP806</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>Simulator</platformTool>
+        <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC16</languageToolchain>
         <languageToolchainVersion>1.11</languageToolchainVersion>
         <platform>3</platform>
@@ -276,6 +277,8 @@
         <property key="programoptions.uselvpprogramming" value="false"/>
         <property key="voltagevalue" value="3.25"/>
       </PICkit3PlatformTool>
+      <Simulator>
+      </Simulator>
     </conf>
   </confs>
 </configurationDescriptor>
