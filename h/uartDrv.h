@@ -14,7 +14,6 @@
 extern void uartInit (void);
 extern void transmitResults(uint8_t sensor, float *phaseAngle, float *amplitude, bool bridgeADCClipFlag, bool coilADCClipFlag, bool bridgeDigitalClipFlag);
 extern void transmitError(uint8_t errorCode);
-extern void processStartCommand(void);
 
 //global variables
 extern uint8_t global_state;

@@ -43,6 +43,10 @@ static void btTxWorker(void);
 static bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
 static void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload);
+static void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
+                    float GUISpecifiedA2, float GUISpecifiedF2,
+                    float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor,
+                    float GUISpecifiedBridgeAnalogGain);
 
 //global variables
 uint8_t global_state = IDLE;
@@ -68,16 +72,12 @@ static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessibl
 static uint8_t btTxBuf [BT_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static int16_t usbTxCur, usbTxEnd, btTxCur, btTxEnd;//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY//keep it singed so my head doesn't hurt!
 
-static float GUISpecifiedA1;
-static float GUISpecifiedF1;
-static float GUISpecifiedA2;
-static float GUISpecifiedF2;
-static float GUISpecifiedT;
-static uint8_t GUISpeciedBridgeGainFactor;
-static float GUISpecifiedBridgeAnalogGain = 30.0;
+void
+processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
+                    float GUISpecifiedA2, float GUISpecifiedF2,
+                    float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor,
+                    float GUISpecifiedBridgeAnalogGain) {
 
-void processStartCommand(void)
-{
     uint32_t local_T;//units are samples
     _Q15 local_f1, local_f2, local_fdiff, local_fsum, local_bridge_balance_frequency;//units are Q15 half-cycles per sample-period
     _Q15 local_a1, local_a2, local_bridge_balance_amplitude;//units are Q15 franctions of DAC full-scale
@@ -379,7 +379,7 @@ void uart_Init (void)
     U1STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC0bits.U1RXIE = 0;         //disable RX interrupt
-    IPC2bits.U1RXIP = 5;	//Receive interrupt priority
+    IPC2bits.U1RXIP = 3;	//Receive interrupt priority
     U1STAbits.URXISEL = 0;      //Interrupt is set when any character is received and transferred from the UxRSR to the receive buffer; receive buffer has one or more characters
 
 
@@ -410,7 +410,7 @@ void uart_Init (void)
     U2STAbits.UTXEN = 1;        //enable UART.TXEN
 
     IEC1bits.U2RXIE = 0;        //disable RX interrupt
-    IPC7bits.U2RXIP = 5;	//Receive interrupt priority
+    IPC7bits.U2RXIP = 3;	//Receive interrupt priority
     U2STAbits.URXISEL = 0;
 
 
@@ -1114,9 +1114,16 @@ void decodeBalanceBridgeCommand(uint8_t *payload, uint8_t sizeOfPayload)
     }
 }
 
-void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
+static inline void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
 {
     uint8_t i, k, array[4];
+    float GUISpecifiedA1;
+    float GUISpecifiedF1;
+    float GUISpecifiedA2;
+    float GUISpecifiedF2;
+    float GUISpecifiedT;
+    uint8_t GUISpeciedBridgeGainFactor;
+    float GUISpecifiedBridgeAnalogGain = 30.0;
 
     if (START_PAYLOAD_SIZE != sizeOfPayload) {
         transmitError(RECEIVED_PACKET_WITH_INCORRECT_SIZE);
@@ -1128,8 +1135,6 @@ void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
      * TODO: this is ridiculous.  no, endianness is not different; the mobile
      * GUI is screwed up.
      */
-
-    START_ATOMIC();//begin critical section; must be atomic!
 
     /* floating point data types begin from startpayload[2], so set k=2 */
     k=2;
@@ -1171,9 +1176,9 @@ void decodeStartCommand(uint8_t startpayload[], uint8_t sizeOfPayload)
 
     GUISpeciedBridgeGainFactor = startpayload[k];
 
-    //start the timer to spawn the process command thread
-    PR4 = DELAY_TO_PROCESS_COMMAND_THREAD;
-    T4CONbits.TON = 1;
+    processStartCommand(GUISpecifiedA1, GUISpecifiedF1, GUISpecifiedA2,
+                        GUISpecifiedF2, GUISpecifiedT,
+                        GUISpeciedBridgeGainFactor,
+                        GUISpecifiedBridgeAnalogGain);
 
-    END_ATOMIC();//end critical section
 }

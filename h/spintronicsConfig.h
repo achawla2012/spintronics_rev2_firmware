@@ -37,7 +37,6 @@
 #define MIN_MEASUREMENT_SAMPLES 3840//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD
 
 #define DELAY_TO_VECTOR_CALC_THREAD 150//processor cycles
-#define DELAY_TO_PROCESS_COMMAND_THREAD 150//processor cycles
 
 //uncomment PROBE and one of the probe sites to output that signal to the COIL DAC
 //#define PROBE
