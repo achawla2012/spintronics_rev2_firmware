@@ -69,7 +69,7 @@ void balanceBridgeFSM(void)
 
     //START_ATOMIC() called from calling ISR
     continue_to_measurement = global_state & START_MEASUREMENT_AFTER_BALANCE_MASK;
-    local_state = global_state & !START_MEASUREMENT_AFTER_BALANCE_MASK;
+    local_state = global_state & ~START_MEASUREMENT_AFTER_BALANCE_MASK;
     /*
      * clear the global state register so we can tell
      * when another request comes in via UART
