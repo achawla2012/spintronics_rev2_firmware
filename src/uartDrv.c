@@ -159,7 +159,7 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
     } else {
         local_f1 = _Q15ftoi(GUISpecifiedF1 * TWICE_SAMPLE_PERIOD);
         implementedF1 = _itofQ15(local_f1) * HALF_SAMPLE_RATE;
-        local_bridge_balance_frequency = f1;
+        local_bridge_balance_frequency = local_f1;
     }
 
     if (GUISpecifiedF2 > MAX_OUTPUT_HZ) {
