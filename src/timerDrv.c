@@ -39,8 +39,10 @@ void timerInit(void)
     T2CONbits.TCKPS = 0b00; // Select 1:1 Prescaler
     TMR3 = 0x00; // Clear 32-bit Timer (msw)
     TMR2 = 0x00; // Clear 32-bit Timer (lsw)
+    IFS0bits.T2IF = 0; // Clear Timer2 Interrupt Flag
     IFS0bits.T3IF = 0; // Clear Timer3 Interrupt Flag
-    IEC0bits.T3IE = 1; // Disable Timer3 interrupt
+    IEC0bits.T2IE = 0; // Disable Timer2 interrupt
+    IEC0bits.T3IE = 0; // Disable Timer3 interrupt
 
 }
 
@@ -65,6 +67,7 @@ void busy_wait_ms(uint16_t ms)
         PR2 = countTarget & 0xFFFF;
         PR3 = *((__eds__ uint16_t *)&countTarget + 1);
         T2CONbits.TON = 1;
+        T3CONbits.TON = 1;
 
         do {
             count = TMR2;
