@@ -71,8 +71,7 @@ int main(void)
     global_state = RAMP_DOWN_COIL_RESTART;
     sensorRBridgeTableValid = true;
 #endif
-    while(1)
-    {
+
 #ifdef NO_GUI
         numberOfSensors = 4;
         sensorAddressTable[0] = 46;
@@ -82,6 +81,9 @@ int main(void)
         processStartCommand(/*a1*/1.0, /*f1*/1000.0, /*a2*/1.0, /*f2*/100.0,
                             /*T*/1.0, /*digital gain*/1, /*analog gain*/20.0);
 #endif
+
+    while(1)
+    {
 #ifdef SIMULATION_MODE
         measurementFSM();
         //balanceBridgeFSM();
