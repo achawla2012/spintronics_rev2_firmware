@@ -47,6 +47,7 @@ static inline bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static inline bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
 static inline void decodeBalanceBridgeCommand(uint8_t *payload,
                                               uint8_t sizeOfPayload);
+#ifndef NO_GUI
 static inline void processStartCommand(float GUISpecifiedA1,
                                        float GUISpecifiedF1,
                                        float GUISpecifiedA2,
@@ -54,6 +55,7 @@ static inline void processStartCommand(float GUISpecifiedA1,
                                        float GUISpecifiedT,
                                        uint8_t GUISpeciedBridgeGainFactor,
                                        float GUISpecifiedBridgeAnalogGain);
+#endif
 
 //global variables
 uint8_t global_state = IDLE;
@@ -79,7 +81,10 @@ static uint8_t usbTxBuf [USB_TX_BUF_SIZE];//must be global so as to be accessibl
 static uint8_t btTxBuf [BT_TX_BUF_SIZE];//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY
 static int16_t usbTxCur, usbTxEnd, btTxCur, btTxEnd;//must be global so as to be accessible from an ISR//static means FILE SCOPE ONLY//keep it singed so my head doesn't hurt!
 
-static inline void
+#ifndef NO_GUI
+static
+#endif
+inline void
 processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
                     float GUISpecifiedA2, float GUISpecifiedF2,
                     float GUISpecifiedT, uint8_t GUISpeciedBridgeGainFactor,

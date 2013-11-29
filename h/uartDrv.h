@@ -14,6 +14,10 @@
 #include "spintronicsStructs.h"
 #endif
 
+#ifndef SPINTRONICS_CONFIG_H
+#include "spintronicsConfig.h"
+#endif
+
 //function prototypes
 extern void uartInit (void);
 extern inline void transmitResults(uint8_t sensor,
@@ -22,6 +26,13 @@ extern inline void transmitResults(uint8_t sensor,
                                    bool bridgeADCClip, bool coilADCClip,
                                    bool bridgeDigitalClip);
 extern inline void transmitError(uint8_t errorCode);
+#ifdef NO_GUI
+inline void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
+                                float GUISpecifiedA2, float GUISpecifiedF2,
+                                float GUISpecifiedT,
+                                uint8_t GUISpeciedBridgeGainFactor,
+                                float GUISpecifiedBridgeAnalogGain);
+#endif
 
 //global variables
 extern uint8_t global_state;

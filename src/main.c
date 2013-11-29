@@ -27,6 +27,9 @@
 #include "balanceBridge.h"
 #include "fsmStates.h"
 #endif
+#ifdef NO_GUI
+#include "uartDrv.h"
+#endif
 
 // Select Internal FRC at POR
 _FOSCSEL(FNOSC_FRC & IESO_OFF);                 // OSC2 Pin Function: OSC2 is Clock Output                                                        // Primary Oscillator Mode: Disabled
@@ -70,6 +73,15 @@ int main(void)
 #endif
     while(1)
     {
+#ifdef NO_GUI
+        numberOfSensors = 4;
+        sensorAddressTable[0] = 46;
+        sensorAddressTable[1] = 47;
+        sensorAddressTable[2] = 45;
+        sensorAddressTable[3] = 16;
+        processStartCommand(/*a1*/1.0, /*f1*/1000.0, /*a2*/1.0, /*f2*/100.0,
+                            /*T*/1.0, /*digital gain*/1, /*analog gain*/20.0);
+#endif
 #ifdef SIMULATION_MODE
         measurementFSM();
         //balanceBridgeFSM();
