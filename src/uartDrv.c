@@ -246,7 +246,7 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
         transmitError(ANALOG_GAIN_OUT_OF_RANGE);
         local_u24_code = 0x00;
         implementedBridgeGain = BRIDGE_ADC_BUFFER_MIN_GAIN;
-    } else if (GUISpecifiedF1 > BRIDGE_ADC_BUFFER_MAX_GAIN) {
+    } else if (GUISpecifiedBridgeAnalogGain > BRIDGE_ADC_BUFFER_MAX_GAIN) {
         transmitError(ANALOG_GAIN_OUT_OF_RANGE);
         local_u24_code = 0xFF;
         implementedBridgeGain = BRIDGE_ADC_BUFFER_MAX_GAIN;
