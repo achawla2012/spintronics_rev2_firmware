@@ -35,9 +35,6 @@
 #define BRIDGE_CHECK_MEASURE_TIME_MULTIPLIER 3
 #endif
 
-//bridge ADC
-#define ADCDAC_GROUP_DELAY 26//units are samples//Note that pointer and pointerPlusOne in generateAndProcessSamples.c/ShiftRegister are uint8_t, so max ADCDAC_GROUP_DELAY is 254
-
 #define MAX_MEASUREMENT_SAMPLES 0x7FFF0000//the counters that keep track of this are uint32_t; must be strictly less than 0x8000000 to avoid ambiguity when casting to int32_t
 #define MIN_MEASUREMENT_SAMPLES 3840//TODO: what's our minimum measurement period before UART transmission overhead causes the state machine to fail? appropriate value TBD
 
