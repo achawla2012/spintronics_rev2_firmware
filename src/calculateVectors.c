@@ -48,19 +48,19 @@ void calculateFinalVectors(void)
     //copy in global variables
     START_ATOMIC();//begin critical section; must be atomic!
     localSensorAddress = sensorAddressCapture;
-    cosAccumulatorFloat.bridge_f1 = (double)cosAccumulatorCapture.bridge_f1;
-    sinAccumulatorFloat.bridge_f1 = (double)sinAccumulatorCapture.bridge_f1;
+    cosAccumulatorFloat.bridge_f1 = (double)(cosAccumulatorCapture.bridge_f1);
+    sinAccumulatorFloat.bridge_f1 = (double)(sinAccumulatorCapture.bridge_f1);
 #ifdef MEASURE_F2_AT_BRIDGE
-    cosAccumulatorFloat.bridge_f2 = (double)cosAccumulatorCapture.bridge_f2;
-    sinAccumulatorFloat.bridge_f2 = (double)sinAccumulatorCapture.bridge_f2;
+    cosAccumulatorFloat.bridge_f2 = (double)(cosAccumulatorCapture.bridge_f2);
+    sinAccumulatorFloat.bridge_f2 = (double)(sinAccumulatorCapture.bridge_f2);
 #endif
-    cosAccumulatorFloat.bridge_fdiff = (double)cosAccumulatorCapture.bridge_fdiff;
-    sinAccumulatorFloat.bridge_fdiff = (double)sinAccumulatorCapture.bridge_fdiff;
-    cosAccumulatorFloat.bridge_fsum = (double)cosAccumulatorCapture.bridge_fsum;
-    sinAccumulatorFloat.bridge_fsum = (double)sinAccumulatorCapture.bridge_fsum;
+    cosAccumulatorFloat.bridge_fdiff = (double)(cosAccumulatorCapture.bridge_fdiff);
+    sinAccumulatorFloat.bridge_fdiff = (double)(sinAccumulatorCapture.bridge_fdiff);
+    cosAccumulatorFloat.bridge_fsum = (double)(cosAccumulatorCapture.bridge_fsum);
+    sinAccumulatorFloat.bridge_fsum = (double)(sinAccumulatorCapture.bridge_fsum);
 #ifdef MEASURE_F2_AT_COIL
-    cosAccumulatorFloat.coil_f2 = (double)cosAccumulatorCapture.coil_f2;
-    sinAccumulatorFloat.coil_f2 = (double)sinAccumulatorCapture.coil_f2;
+    cosAccumulatorFloat.coil_f2 = (double)(cosAccumulatorCapture.coil_f2);
+    sinAccumulatorFloat.coil_f2 = (double)(sinAccumulatorCapture.coil_f2);
 #endif
     localBridgeADCClip = bridgeADCClipCapture;
     localCoilADCClip = coilADCClipCapture;
