@@ -66,27 +66,27 @@ int main(void)
     muxInit();// setup pins to communicate with the multiplexer
     uart_Init();// Init UART for GUI communication
     
+#if defined(NO_GUI) || defined(SIMULATION_MODE)
+        numberOfSensors = 5;
+        sensorAddressTable[0] = 0x2F;
+        sensorAddressTable[1] = 47;
+        sensorAddressTable[2] = 45;
+        sensorAddressTable[3] = 16;
+        sensorAddressTable[4] = 17;
+        processStartCommand(/*a1*/3.0, /*f1*/1000.0, /*a2*/.05, /*f2*/100.0,
+                            /*T*/1.0, /*digital gain*/1, /*analog gain*/20.0);
+#endif
+
 #ifdef SIMULATION_MODE
-    processStartCommand();
     global_state = RAMP_DOWN_COIL_RESTART;
     sensorRBridgeTableValid = true;
 #endif
 
-#ifdef NO_GUI
-        numberOfSensors = 4;
-        sensorAddressTable[0] = 46;
-        sensorAddressTable[1] = 47;
-        sensorAddressTable[2] = 45;
-        sensorAddressTable[3] = 16;
-        processStartCommand(/*a1*/1.0, /*f1*/1000.0, /*a2*/1.0, /*f2*/100.0,
-                            /*T*/1.0, /*digital gain*/1, /*analog gain*/20.0);
-#endif
 
     while(1)
     {
 #ifdef SIMULATION_MODE
         measurementFSM();
-        //balanceBridgeFSM();
 #endif
     }
 }
