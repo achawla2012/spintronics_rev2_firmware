@@ -73,8 +73,8 @@ int main(void)
         sensorAddressTable[2] = 45;
         sensorAddressTable[3] = 16;
         sensorAddressTable[4] = 17;
-        processStartCommand(/*a1*/3.0, /*f1*/1000.0, /*a2*/.05, /*f2*/100.0,
-                            /*T*/1.0, /*digital gain*/1, /*analog gain*/20.0);
+        processStartCommand(/*a1*/.300, /*f1*/1000.0, /*a2*/.05, /*f2*/100.0,
+                            /*T*/0.5, /*digital gain*/1, /*analog gain*/20.0);
 #endif
 
 #ifdef SIMULATION_MODE
