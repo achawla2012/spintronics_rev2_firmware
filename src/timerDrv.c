@@ -27,7 +27,7 @@ void timerInit(void)
     T1CONbits.TCS = 0; // Internal clock as source
     TMR1 = 0x00; // clear Timer1
     PR1 = 0xFFFF; // load an arbitrary value for comparison (not 0)
-    IPC0bits.T1IP = 0x03; // Set Timer 1 Interrupt Priority Level
+    IPC0bits.T1IP = 0x02; // Set Timer 1 Interrupt Priority Level
     IFS0bits.T1IF = 0; // Clear Timer 1 Interrupt Flag
     IEC0bits.T1IE = 1; // Enable Timer1 interrupt
 
