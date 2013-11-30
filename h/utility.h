@@ -8,7 +8,13 @@
  * michael.sandstedt@gmail.com
  */
 
+#ifndef UTILITY_H
+#define UTILITY_H
+
 int32_t asm16X16Mult(int16_t, int16_t);
 extern inline void START_ATOMIC(void);
 extern inline void END_ATOMIC(void);
+extern inline void RETFIE(void);
 extern inline void NOP(void);
+
+#endif

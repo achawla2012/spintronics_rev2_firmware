@@ -24,6 +24,7 @@
 #include "uartDrv.h"
 #include "spintronicsStructs.h"
 #include "digiPotDrv.h"
+#include "utility.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
@@ -555,6 +556,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
                 break;
         }
     }
+    RETFIE();
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
@@ -665,6 +667,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
                 break;
         }
     }
+    RETFIE();
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
@@ -672,6 +675,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
     IFS0bits.U1TXIF = 0;
     IEC0bits.U1TXIE = 0;
     usbTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
+    RETFIE();
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
@@ -679,6 +683,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
     IFS1bits.U2TXIF = 0;
     IEC1bits.U2TXIE = 0;
     btTxWorker();//The shift register got full. But now it's empty again.  Let's TX!
+    RETFIE();
 }
 
 inline void

@@ -54,6 +54,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
     T1CONbits.TON = 0;
     TMR1 = 0x0000;
     calculateFinalVectors();
+    RETFIE();
 }
 
 void busy_wait_ms(uint16_t ms)

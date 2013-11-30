@@ -16,6 +16,7 @@
 #include "generateAndProcessSamples.h"
 #include "balanceBridge.h"
 #include "uartDrv.h"
+#include "utility.h"
 
 /*
 i2sInit(): Initialise DCI for I2S
@@ -97,4 +98,5 @@ void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
     } else {
         measurementFSM();
     }
+    RETFIE();
 }

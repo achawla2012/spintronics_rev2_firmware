@@ -23,6 +23,11 @@ inline void END_ATOMIC(void)
     DISICNT = 0;
 }
 
+inline void RETFIE(void)
+{
+    __asm__ volatile ("RETFIE");
+}
+
 inline void NOP(void)
 {
     __asm__ volatile ("nop");
