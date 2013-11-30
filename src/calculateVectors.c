@@ -28,7 +28,7 @@ bool bridgeADCClipCapture;
 bool coilADCClipCapture;
 bool bridgeDigitalClipCapture;
 bool f1PlusF2OutOfRangeCapture;
-float implementedBridgeGainCapture;
+float inverseBridgeAnalogGainCapture;
 
 void calculateFinalVectors(void)
 {
@@ -150,120 +150,120 @@ void calculateFinalVectors(void)
     {
         case 0:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             }
             break;
 
 
         case 1:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_2 * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_2 * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_2 * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_2 * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_2 * inverseBridgeAnalogGainCapture;
             }
             break;
 
 
         case 2:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_4 * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_4 * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_4 * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_4 * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_4 * inverseBridgeAnalogGainCapture;
             }
             break;
 
 
         case 3:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_8 * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_8 * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_8 * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_8 * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_8 * inverseBridgeAnalogGainCapture;
             }
             break;
 
 
         case 4:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR_BY_16 * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR_BY_16 * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_16 * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_16 * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR_BY_16 * inverseBridgeAnalogGainCapture;
             }
             break;
 
 
         default:
 
-            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_f1 = amplitude.bridge_f1 * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
 
             #ifdef MEASURE_F2_AT_BRIDGE
-            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_f2 = amplitude.bridge_f2 * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             #endif
 
-            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+            amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             if (localF1PlusF2OutOfRange)
             {
                 amplitude.bridge_fsum = 0;
             }
             else
             {
-                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR * implementedBridgeGainCapture;
+                amplitude.bridge_fsum = amplitude.bridge_fsum * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
             }
             break;
 

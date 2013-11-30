@@ -167,6 +167,11 @@ inline float getU25InverseGainFromU24Code(uint8_t u24_code)
     return getU25InverseGainFromU24Ohms(rg_ohms);
 }
 
+inline float getBridgeInverseGainFromU24Code(uint8_t u24_code)
+{
+    return getU25InverseGainFromU24Code(u24_code) * U2_INVERSE_GAIN;
+}
+
 inline float getU24OhmsFromU25Gain(float u25_gain)
 {
     return 6000.0 / (u25_gain - 1);

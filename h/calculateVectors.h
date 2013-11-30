@@ -22,4 +22,4 @@ extern bool bridgeADCClipCapture;
 extern bool coilADCClipCapture;
 extern bool bridgeDigitalClipCapture;
 extern bool f1PlusF2OutOfRangeCapture;
-extern float implementedBridgeGainCapture;
+extern float inverseBridgeAnalogGainCapture;

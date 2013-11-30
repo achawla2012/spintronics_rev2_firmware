@@ -67,7 +67,7 @@ void measurementFSM(void)
     static _Q15 local_f2;//units are Q15 half-cycles per sample-period
     static _Q15 local_a2;
     static bool local_f1PlusF2OutOfRange;
-    static float local_implementedBridgeGain;
+    static float local_inverseBridgeAnalogGain;
 
     //START_ATOMIC() called from calling ISR
 
@@ -163,7 +163,7 @@ void measurementFSM(void)
              * a new START command during the last cycle with the previous
              * START command's values
              */
-            local_implementedBridgeGain = implementedBridgeGain;
+            local_inverseBridgeAnalogGain = inverseBridgeAnalogGain;
 
             END_ATOMIC();//end critical section
 
@@ -298,7 +298,7 @@ void measurementFSM(void)
             coilADCClipCapture = coilADCClip;
             bridgeDigitalClipCapture = bridgeDigitalClip;
             f1PlusF2OutOfRangeCapture = local_f1PlusF2OutOfRange;
-            implementedBridgeGainCapture = local_implementedBridgeGain;
+            inverseBridgeAnalogGainCapture = local_inverseBridgeAnalogGain;
 
             //start the timer to spawn the vector calc thread
             PR1 = DELAY_TO_VECTOR_CALC_THREAD;

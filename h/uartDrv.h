@@ -70,4 +70,4 @@ extern uint8_t latest_command;
 ****************************************************************/
 extern uint8_t bridgeADCGainFactor;
 extern uint8_t u24_code;
-extern float implementedBridgeGain;
+extern float inverseBridgeAnalogGain;

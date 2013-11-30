@@ -22,6 +22,7 @@
 #define FULLSCALE_BRIDGE_DAC_VOLTAGE 2.20901803//units are volts//the Wheatstone bridge voltage that corresponds to a full-scale output//as of 5/6/2013: the DAC outputs 1.25Vpeak on two differential pins giving 2.5peak total; the DAC buffer gain is 6.04k/4.99k; 2.5 * 6.04 / 4.99 = 3.02605210
 #define FULLSCALE_COIL_DAC_VOLTAGE 2.20901803//untis are volts//the output voltage for the coil channel that corresponds to a full-scale output//as of 5/6/2013: the DAC outputs 1.25Vpeak on two differential pins giving 2.5peak total; the DAC buffer gain is 6.04k/4.99k; 2.5 * 6.04 / 4.99 = 3.02605210
 #define U2_BUF_GAIN 1.39819005
+#define U2_INVERSE_GAIN .715210354
 #define COIL_ADC_BUFFER_GAIN 20.179
 
 //TODO: these values depend upon the above calibrated values
@@ -34,5 +35,7 @@
 #define BRIDGE_ADC_SCALE_FACTOR_BY_16 162.981451e-12 //BRIDGE_ADC_SCALE_FACTOR / 16.0
 #define BRIDGE_ADC_BUFFER_MIN_GAIN 9.38784748 //getBridgeBufGainFromU24Code(0)
 #define BRIDGE_ADC_BUFFER_MAX_GAIN 157.022822 //getBridgeBufGainFromU24Code(0xFF)
+#define INVERSE_BRIDGE_ANALOG_MIN_GAIN 106.520691e-3
+#define INVERSE_BRIDGE_ANALOG_MAX_GAIN 6.36850101e-3
 #define INVERSE_U2_BUF_GAIN 715.210354e-3 //1.0 / U2_BUF_GAIN;
 

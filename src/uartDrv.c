@@ -69,7 +69,7 @@ _Q15 a1;//units are Q15 franctions of DAC full-scale
 _Q15 a2;//units are Q15 fractions of DAC full-scale
 uint8_t bridgeADCGainFactor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
 uint8_t u24_code;
-float implementedBridgeGain;
+float inverseBridgeAnalogGain;
 bool f1PlusF2OutOfRange;
 _Q15 bridge_balance_amplitude;
 _Q15 bridge_balance_frequency;
@@ -96,7 +96,8 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
     _Q15 local_a1, local_a2, local_bridge_balance_amplitude;//units are Q15 franctions of DAC full-scale
     uint8_t local_gain_factor;//this can be 0, 1, 2, 3, 4, 5, 6, 7, 8; gain = 2^bridgeADCGainFactor;//in practice, only 0, 1, 2, 3, 4 offer any advantage due to the noise floor of the ADC (~114dB for CS4272)
     uint8_t local_u24_code;
-    float local_implementedBridgeGain;
+    float local_inverseBridgeAnalogGain;
+    float implementedBridgeGain;
     bool local_f1PlusF2OutOfRange;
 
     float implementedF1, implementedF2, implementedFSum, implementedFDiff;
@@ -247,13 +248,16 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
         transmitError(ANALOG_GAIN_OUT_OF_RANGE);
         local_u24_code = 0x00;
         implementedBridgeGain = BRIDGE_ADC_BUFFER_MIN_GAIN;
+        local_inverseBridgeAnalogGain = INVERSE_BRIDGE_ANALOG_MIN_GAIN;
     } else if (GUISpecifiedBridgeAnalogGain > BRIDGE_ADC_BUFFER_MAX_GAIN) {
         transmitError(ANALOG_GAIN_OUT_OF_RANGE);
         local_u24_code = 0xFF;
         implementedBridgeGain = BRIDGE_ADC_BUFFER_MAX_GAIN;
+        local_inverseBridgeAnalogGain = INVERSE_BRIDGE_ANALOG_MAX_GAIN;
     } else {
         local_u24_code = getU24CodeFromBrdigeBufGain(GUISpecifiedBridgeAnalogGain);
         implementedBridgeGain = getBridgeBufGainFromU24Code(local_u24_code);
+        local_inverseBridgeAnalogGain = getBridgeInverseGainFromU24Code(local_u24_code);
     }
 
     startPayload_confirmToGUI[0] = CONFIRM_START_COMMAND;
@@ -283,7 +287,7 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
     a2 = local_a2;
     bridgeADCGainFactor = local_gain_factor;
     u24_code = local_u24_code;
-    implementedBridgeGain = local_implementedBridgeGain;
+    inverseBridgeAnalogGain = local_inverseBridgeAnalogGain;
     f1PlusF2OutOfRange = local_f1PlusF2OutOfRange;
     bridge_balance_amplitude = local_bridge_balance_amplitude;
     bridge_balance_frequency = local_bridge_balance_frequency;
