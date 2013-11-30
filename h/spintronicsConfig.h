@@ -16,10 +16,10 @@
 //#define MEASURE_F2_AT_BRIDGE
 //#define MEASURE_F2_AT_COIL
 //#define SIMULATION_MODE //un-comment this for a simulation specific build
+//#define NO_GUI //un-comment to launch a start command automatically form main
 //#define CODEC_USES_I2S //un-comment this if tx/rx samples from the CODEC are in I2S format; otherwise samples are left-justified
 #define TRIG_USES_LUT//un-comment this to enable the LUT-based sin / cos functions; otherwise, the C30 _Q15cosPI(), _Q15sinPI() functions are used
 
-#define NO_GUI
 #ifdef SIMULATION_MODE
 #define MEASUREMENT_SETUP_TIME 10
 #define GAIN_CHECK_SETUP_TIME 10
