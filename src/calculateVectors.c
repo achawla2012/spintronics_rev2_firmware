@@ -37,51 +37,20 @@ void calculateFinalVectors(void)
     double_array_t phaseAngle;
     float_array_t amplitude;
     float_array_t phaseAngle32;
-    accumulator_t localCosAccumulator;
-    accumulator_t localSinAccumulator;
 
-    uint8_t localSensorAddress;
-    bool localBridgeADCClip;
-    bool localCoilADCClip;
-    bool localBridgeDigitalClip;
-    bool localF1PlusF2OutOfRange;
-
-    //copy in global variables
-    START_ATOMIC();//begin critical section; must be atomic!
-    localSensorAddress = sensorAddressCapture;
-    localCosAccumulator.bridge_f1 = cosAccumulatorCapture.bridge_f1;
-    localSinAccumulator.bridge_f1 = sinAccumulatorCapture.bridge_f1;
+    cosAccumulatorFloat.bridge_f1 = (double)(cosAccumulatorCapture.bridge_f1);
+    sinAccumulatorFloat.bridge_f1 = (double)(sinAccumulatorCapture.bridge_f1);
 #ifdef MEASURE_F2_AT_BRIDGE
-    localCosAccumulator.bridge_f2 = cosAccumulatorCapture.bridge_f2;
-    localSinAccumulator.bridge_f2 = sinAccumulatorCapture.bridge_f2;
+    cosAccumulatorFloat.bridge_f2 = (double)(cosAccumulatorCapture.bridge_f2);
+    sinAccumulatorFloat.bridge_f2 = (double)(sinAccumulatorCapture.bridge_f2);
 #endif
-    localCosAccumulator.bridge_fdiff = cosAccumulatorCapture.bridge_fdiff;
-    localSinAccumulator.bridge_fdiff = sinAccumulatorCapture.bridge_fdiff;
-    localCosAccumulator.bridge_fsum = cosAccumulatorCapture.bridge_fsum;
-    localSinAccumulator.bridge_fsum = sinAccumulatorCapture.bridge_fsum;
+    cosAccumulatorFloat.bridge_fdiff = (double)(cosAccumulatorCapture.bridge_fdiff);
+    sinAccumulatorFloat.bridge_fdiff = (double)(sinAccumulatorCapture.bridge_fdiff);
+    cosAccumulatorFloat.bridge_fsum = (double)(cosAccumulatorCapture.bridge_fsum);
+    sinAccumulatorFloat.bridge_fsum = (double)(sinAccumulatorCapture.bridge_fsum);
 #ifdef MEASURE_F2_AT_COIL
-    localCosAccumulator.coil_f2 = cosAccumulatorCapture.coil_f2;
-    localSinAccumulator.coil_f2 = sinAccumulatorCapture.coil_f2;
-#endif
-    localBridgeADCClip = bridgeADCClipCapture;
-    localCoilADCClip = coilADCClipCapture;
-    localBridgeDigitalClip = bridgeDigitalClipCapture;
-    localF1PlusF2OutOfRange = f1PlusF2OutOfRangeCapture;
-    END_ATOMIC();//end critical section
-
-    cosAccumulatorFloat.bridge_f1 = (double)(localCosAccumulator.bridge_f1);
-    sinAccumulatorFloat.bridge_f1 = (double)(localSinAccumulator.bridge_f1);
-#ifdef MEASURE_F2_AT_BRIDGE
-    cosAccumulatorFloat.bridge_f2 = (double)(localCosAccumulator.bridge_f2);
-    sinAccumulatorFloat.bridge_f2 = (double)(localSinAccumulator.bridge_f2);
-#endif
-    cosAccumulatorFloat.bridge_fdiff = (double)(localCosAccumulator.bridge_fdiff);
-    sinAccumulatorFloat.bridge_fdiff = (double)(localSinAccumulator.bridge_fdiff);
-    cosAccumulatorFloat.bridge_fsum = (double)(localCosAccumulator.bridge_fsum);
-    sinAccumulatorFloat.bridge_fsum = (double)(localSinAccumulator.bridge_fsum);
-#ifdef MEASURE_F2_AT_COIL
-    cosAccumulatorFloat.coil_f2 = (double)(localCosAccumulator.coil_f2);
-    sinAccumulatorFloat.coil_f2 = (double)(localSinAccumulator.coil_f2);
+    cosAccumulatorFloat.coil_f2 = (double)(cosAccumulatorCapture.coil_f2);
+    sinAccumulatorFloat.coil_f2 = (double)(sinAccumulatorCapture.coil_f2);
 #endif
 
     phaseAngle.bridge_f1 = atan2(sinAccumulatorFloat.bridge_f1, cosAccumulatorFloat.bridge_f1);
@@ -173,7 +142,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -193,7 +162,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_2 * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -213,7 +182,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_4 * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -233,7 +202,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_8 * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -253,7 +222,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR_BY_16 * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -273,7 +242,7 @@ void calculateFinalVectors(void)
             #endif
 
             amplitude.bridge_fdiff = amplitude.bridge_fdiff * BRIDGE_ADC_SCALE_FACTOR * inverseBridgeAnalogGainCapture;
-            if (localF1PlusF2OutOfRange)
+            if (f1PlusF2OutOfRangeCapture)
             {
                 amplitude.bridge_fsum = 0;
             }
@@ -299,8 +268,8 @@ void calculateFinalVectors(void)
     phaseAngle32.coil_f2 = phaseAngle.coil_f2;
 #endif
 
-    transmitResults(localSensorAddress, &phaseAngle32, &amplitude,
-                    localBridgeADCClip, localCoilADCClip,
-                    localBridgeDigitalClip);
+    transmitResults(sensorAddressCapture, &phaseAngle32, &amplitude,
+                    bridgeADCClipCapture, coilADCClipCapture,
+                    bridgeDigitalClipCapture);
 
 }
