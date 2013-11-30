@@ -9,6 +9,9 @@
  * michael.sandstedt@gmail.com
  */
 
+#ifndef DIGI_POT_DRV_H
+#define DIGI_POT_DRV_H
+
 //see getRBridgeOhms(uint16_t val) for corresponding values in ohms
 #define R_BRIDGE_MAX 1535
 #define R_BRIDGE_MIN 0
@@ -21,5 +24,7 @@
 
 extern void setRBridge(uint16_t val);
 extern void setRAmp(uint8_t val);
-extern float getBridgeBufGainFromU24Code(uint8_t u24_code);
-extern uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain);
+extern inline float getBridgeBufGainFromU24Code(uint8_t u24_code);
+extern inline uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain);
+
+#endif

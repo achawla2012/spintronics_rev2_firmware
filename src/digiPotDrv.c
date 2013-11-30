@@ -102,7 +102,6 @@ float getRBridgeOhms(uint16_t val)
 {
     uint8_t u20_val;
     uint8_t u23_val;
-    float ohms;
 
     if (val > 1535)
     {
@@ -113,10 +112,8 @@ float getRBridgeOhms(uint16_t val)
     u20_val = (val >> 8) * 51;
     u23_val = val & 0x00FF;
 
-    ohms = 110.0 + (  (256 - u20_val) * 5000.0
+    return 110.0 + (  (256 - u20_val) * 5000.0
                     + (256 - u23_val) * 1000.0 ) / 256.0;
-
-    return ohms;
 }
 
 
@@ -131,62 +128,51 @@ float getRBridgeOhms(uint16_t val)
  * return: Wheatstone bridge buffer amp r_feedback in ohms
  */
 
-float getRAmpOhms(uint8_t val)
+inline float getRAmpOhms(uint8_t val)
 {
     /*
      * val corresponds to values sent to U24 (AD8400ARZI).  See the Analog
      * Devices datasheet for more info.
      */
     
-    float ohms;
-    ohms = 50.0 + (256 - val) * 1000.0 / 256.0;
-    return ohms;
+    return 50.0 + (256 - val) * 1000.0 / 256.0;
 }
 
-float getU25GainFromU24Ohms(float rg_ohms)
+inline float getU25GainFromU24Ohms(float rg_ohms)
 {
-    float gain;
-    gain = 1 + 6000.0 / rg_ohms;
-    return gain;
+    return 1 + 6000.0 / rg_ohms;
 }
 
-float getU25GainFromU24Code(uint8_t u24_code)
-{
-    float rg_ohms, gain;
-    rg_ohms = getRAmpOhms(u24_code);
-    gain = getU25GainFromU24Ohms(rg_ohms);
-    return gain;
-}
-
-float getBridgeBufGainFromU24Code(uint8_t u24_code)
-{
-    float gain = getU25GainFromU24Code(u24_code) * U2_BUF_GAIN;
-    return gain;
-}
-
-float getU25InverseGainFromU24Ohms(float rg_ohms)
-{
-    float inverseGain;
-    inverseGain = rg_ohms / (6000.0 + rg_ohms);
-    return inverseGain;
-}
-
-float getU25InverseGainFromU24Code(uint8_t u24_code)
-{
-    float rg_ohms, inverseGain;
-    rg_ohms = getRAmpOhms(u24_code);
-    inverseGain = getU25InverseGainFromU24Ohms(rg_ohms);
-    return inverseGain;
-}
-
-float getU24OhmsFromU25Gain(float u25_gain)
+inline float getU25GainFromU24Code(uint8_t u24_code)
 {
     float rg_ohms;
-    rg_ohms = 6000.0 / (u25_gain - 1);
-    return rg_ohms;
+    rg_ohms = getRAmpOhms(u24_code);
+    return getU25GainFromU24Ohms(rg_ohms);
 }
 
-uint8_t getU24CodeFromU25Gain(float u25_gain)
+inline float getBridgeBufGainFromU24Code(uint8_t u24_code)
+{
+    return getU25GainFromU24Code(u24_code) * U2_BUF_GAIN;
+}
+
+inline float getU25InverseGainFromU24Ohms(float rg_ohms)
+{
+    return rg_ohms / (6000.0 + rg_ohms);
+}
+
+inline float getU25InverseGainFromU24Code(uint8_t u24_code)
+{
+    float rg_ohms;
+    rg_ohms = getRAmpOhms(u24_code);
+    return getU25InverseGainFromU24Ohms(rg_ohms);
+}
+
+inline float getU24OhmsFromU25Gain(float u25_gain)
+{
+    return 6000.0 / (u25_gain - 1);
+}
+
+inline uint8_t getU24CodeFromU25Gain(float u25_gain)
 {
     uint8_t u24_code;
     float u24_float_code;
@@ -208,7 +194,7 @@ uint8_t getU24CodeFromU25Gain(float u25_gain)
 
 }
 
-uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain) {
+inline uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain) {
 
     return getU24CodeFromU25Gain(bridge_gain * INVERSE_U2_BUF_GAIN);
 
