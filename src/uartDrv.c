@@ -252,7 +252,7 @@ processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
         implementedBridgeGain = BRIDGE_ADC_BUFFER_MAX_GAIN;
     } else {
         local_u24_code = getU24CodeFromBrdigeBufGain(GUISpecifiedBridgeAnalogGain);
-        implementedBridgeGain = getBridgeBufGainFromU24Code(u24_code);
+        implementedBridgeGain = getBridgeBufGainFromU24Code(local_u24_code);
     }
 
     startPayload_confirmToGUI[0] = CONFIRM_START_COMMAND;
