@@ -47,7 +47,7 @@ static inline bool copyToUSBTxBuf(uint8_t *array, uint16_t numBytes);
 static inline bool copyToBTTxBuf(uint8_t *array, uint16_t numBytes);
 static inline void decodeBalanceBridgeCommand(uint8_t *payload,
                                               uint8_t sizeOfPayload);
-#ifndef NO_GUI
+#if !defined(NO_GUI) && !defined(SIMULATION_MODE)
 static inline void processStartCommand(float GUISpecifiedA1,
                                        float GUISpecifiedF1,
                                        float GUISpecifiedA2,
@@ -298,15 +298,6 @@ void uart_Init (void)
     /***************************************************************************
      * initialization of global variables
      **************************************************************************/
-#ifdef SIMULATION_MODE
-    GUISpecifiedA1 = 2.0;
-    GUISpecifiedF1 = 1000.0;
-    GUISpecifiedA2 = 2.0;
-    GUISpecifiedF2 = 100.0;
-    GUISpecifiedT = 1.0;
-    GUISpeciedBridgeGainFactor = 0x04;
-    GUISpecifiedBridgeAnalogGain = 30.0;
-#endif
 
     sensorAddressTable = sensorAddressTableAllocated;
     measurementTime = SAMPLE_RATE;
