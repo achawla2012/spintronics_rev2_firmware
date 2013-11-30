@@ -54,6 +54,7 @@ void balanceBridgeFSM(void)
     static uint8_t r_amp_lo_mid;
     static uint8_t r_amp_hi_mid;
     static uint8_t r_amp_max;
+    uint8_t r_amp_diff;
     static bool r_amp_lo_mid_clip;
     static bool r_amp_hi_mid_clip;
 
@@ -156,7 +157,12 @@ void balanceBridgeFSM(void)
             r_amp_lo_mid_clip = false;
 
             //set setRAmp to r_amp_lo_mid
-            r_amp_lo_mid = (r_amp_max - r_amp_min) / 4 + r_amp_min;
+            r_amp_diff = r_amp_max - r_amp_min;
+            if (r_amp_diff > 3) {
+                r_amp_lo_mid = r_amp_diff / 4 + r_amp_min;
+            } else {
+                r_amp_lo_mid = r_amp_min + 1;
+            }
             setRAmp(r_amp_lo_mid);
 
             local_state = R_AMP_LO_MID_SIGNAL_SETTLING;
@@ -199,7 +205,12 @@ void balanceBridgeFSM(void)
             r_amp_hi_mid_clip = false;
 
             //set setRAmp to r_amp_hi_mid
-            r_amp_hi_mid = (uint16_t)(r_amp_max - r_amp_min) * 3 / 4 + r_amp_min;
+            r_amp_diff = r_amp_max - r_amp_min;
+            if (r_amp_diff > 1) {
+                r_amp_hi_mid = (uint16_t)r_amp_diff * 3 / 4 + r_amp_min;
+            } else {
+                r_amp_hi_mid = r_amp_max - 1;
+            }
             setRAmp(r_amp_hi_mid);
 
             local_state = R_AMP_HI_MID_SIGNAL_SETTLING;
