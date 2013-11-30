@@ -62,6 +62,7 @@ void balanceBridgeFSM(void)
     static uint16_t r_bridge_lo_mid;
     static uint16_t r_bridge_hi_mid;
     static uint16_t r_bridge_max;
+    uint16_t r_bridge_diff;
     static float r_bridge_lo_mid_amplitude;
     static float r_bridge_hi_mid_amplitude;
 
@@ -158,7 +159,7 @@ void balanceBridgeFSM(void)
 
             //set setRAmp to r_amp_lo_mid
             r_amp_diff = r_amp_max - r_amp_min;
-            if (r_amp_diff > 3) {
+            if (r_amp_diff > 7) {
                 r_amp_lo_mid = r_amp_diff / 4 + r_amp_min;
             } else {
                 r_amp_lo_mid = r_amp_min + 1;
@@ -206,7 +207,7 @@ void balanceBridgeFSM(void)
 
             //set setRAmp to r_amp_hi_mid
             r_amp_diff = r_amp_max - r_amp_min;
-            if (r_amp_diff > 1) {
+            if (r_amp_diff > 2) {
                 r_amp_hi_mid = (uint16_t)r_amp_diff * 3 / 4 + r_amp_min;
             } else {
                 r_amp_hi_mid = r_amp_max - 1;
@@ -293,7 +294,12 @@ void balanceBridgeFSM(void)
             sinAccumulator = 0;
             
             //set set RBridge to r_bridge_lo_mid
-            r_bridge_lo_mid = (r_bridge_max - r_bridge_min) / 4 + r_bridge_min;
+            r_bridge_diff = r_bridge_max - r_bridge_min;
+            if (r_bridge_diff > 7) {
+                r_bridge_lo_mid = r_bridge_diff / 4 + r_bridge_min;
+            } else {
+                r_bridge_lo_mid = r_bridge_min + 1;
+            }
             setRBridge(r_bridge_lo_mid);
 
             local_state = R_BRIDGE_LO_MID_SIGNAL_SETTLING;
@@ -396,8 +402,13 @@ void balanceBridgeFSM(void)
             sinAccumulator = 0;
 
             //set set RBridge to r_bridge_hi_mid
-            r_bridge_hi_mid = (r_bridge_max - r_bridge_min) * 3 / 4 + r_bridge_min;
-            setRBridge(r_bridge_lo_mid);
+            r_bridge_diff = r_bridge_max - r_bridge_min;
+            if (r_bridge_diff > 2) {
+                r_bridge_hi_mid = r_bridge_diff * 3 / 4 + r_bridge_min;
+            } else {
+                r_bridge_hi_mid = r_bridge_max - 1;
+            }
+            setRBridge(r_bridge_hi_mid);
 
             local_state = R_BRIDGE_HI_MID_SIGNAL_SETTLING;
             break;
