@@ -304,6 +304,10 @@ void measurementFSM(void)
             PR1 = DELAY_TO_VECTOR_CALC_THREAD;
             T1CONbits.TON = 1;
 
+#ifdef SIMULATION_MODE
+            calculateFinalVectors();
+#endif
+
             ++sensorIndex;
             if (sensorIndex >= numberOfSensors) {
 
