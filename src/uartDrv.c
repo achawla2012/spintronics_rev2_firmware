@@ -23,6 +23,7 @@
 #include "balanceBridge.h"
 #include "uartDrv.h"
 #include "spintronicsStructs.h"
+#include "digiPotDrv.h"
 
 #define DEFAULT_SENSOR_ADDRESS 0x00//bit pattern to disable both MUXs
 #define USB_TX_BUF_SIZE 256
