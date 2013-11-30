@@ -498,9 +498,9 @@ void balanceBridgeFSM(void)
             }
 
             if (r_bridge_lo_mid_amplitude > r_bridge_hi_mid_amplitude) {
-                r_bridge_min = r_bridge_lo_mid_amplitude;
+                r_bridge_min = r_bridge_lo_mid;
             } else {
-                r_bridge_max = r_bridge_hi_mid_amplitude;
+                r_bridge_max = r_bridge_hi_mid;
             }
             
             if (r_bridge_min < r_bridge_max) {
