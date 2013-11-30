@@ -39,10 +39,8 @@ Command:
   ..\a\libq-coff.a \
   ..\a\libq-elf.a \
   --defsym=__MPLAB_BUILD=1 \
-  --defsym=__ICD2RAM=1 \
   --defsym=__MPLAB_DEBUG=1 \
   --defsym=__DEBUG=1 \
-  --defsym=__MPLAB_DEBUGGER_PK3=1 \
   -Tp33EP512GP806.gld.00 \
   --check-sections \
   --data-init \
@@ -105,6 +103,8 @@ c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sinf.epo)
                               build/default/debug/_ext/1360937237/calculateVectors.o (sinf)
 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(udivsi3.epo)
                               build/default/debug/_ext/1360937237/balanceBridge.o (__udivsi3)
+c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsi3.epo)
+                              build/default/debug/_ext/1360937237/balanceBridge.o (__divsi3)
 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
                               c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fgtge.epo) (_fcompare)
 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
@@ -127,19 +127,23 @@ c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
                               c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo) (fmodf)
 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
                               c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo) (_fmodrem)
+c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo)
+                              build/default/debug/_ext/1360937237/generateAndProcessSamples.o (rand)
+c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsi3.epo)
+                              c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo) (__mulsi3)
 
 
 Program Memory  [Origin = 0x200, Length = 0x555fe]
 
 section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
-.text                        0x200               0x754           0xafe  (2814)
-.prog                        0x954              0x7ffe          0xbffd  (49149)
-.text                       0x8952              0x38c0          0x5520  (21792)
-.dinit                      0xc212                0x40            0x60  (96)
-.text                       0xc252                0x40            0x60  (96)
+.text                        0x200               0x824           0xc36  (3126)
+.prog                        0xa24              0x7ffe          0xbffd  (49149)
+.text                       0x8a22              0x36ba          0x5217  (21015)
+.dinit                      0xc0dc                0x52            0x7b  (123)
+.text                       0xc12e                0x34            0x4e  (78)
 
-                     Total program memory used (bytes):        0x120db  (73947) 14%
+                     Total program memory used (bytes):        0x11f13  (73491) 14%
 
 
 Auxflash Memory  [Origin = 0x7fc000, Length = 0x3ff8]
@@ -155,11 +159,13 @@ Data Memory  [Origin = 0x1000, Length = 0xd000]
 section                    address      alignment gaps    total length  (dec)
 -------                    -------      --------------    -------------------
 .icd                        0x1000                0x50            0x50  (80)
-.nbss                       0x1050                   0           0x548  (1352)
-.ndata                      0x1598                   0             0xa  (10)
-.nbss                       0x15a2                   0             0x2  (2)
+.nbss                       0x1050                   0           0x482  (1154)
+.ndata                      0x14d2                   0             0x6  (6)
+.nbss                       0x14d8                   0             0x2  (2)
+.bss                        0x14da                   0            0x84  (132)
+.data                       0x155e                   0             0xa  (10)
 
-                        Total data memory used (bytes):          0x5a4  (1444) 2%
+                        Total data memory used (bytes):          0x568  (1384) 2%
 
 
 Dynamic Memory Usage
@@ -167,9 +173,9 @@ Dynamic Memory Usage
 region                     address                      maximum length  (dec)
 ------                     -------                      ---------------------
 heap                             0                                   0  (0)
-stack                       0x15a4                              0xca5c  (51804)
+stack                       0x1568                              0xca98  (51864)
 
-                        Maximum dynamic memory (bytes):         0xca5c  (51804)
+                        Maximum dynamic memory (bytes):         0xca98  (51864)
 
 
 External Symbols in Data Memory (by address):
@@ -183,53 +189,61 @@ External Symbols in Data Memory (by address):
                     0x105e                  _a2
                     0x1060                  _bridgeADCGainFactor
                     0x1061                  _u24_code
-                    0x1062                  _implementedBridgeGain
+                    0x1062                  _inverseBridgeAnalogGain
                     0x1066                  _f1PlusF2OutOfRange
                     0x1068                  _bridge_balance_amplitude
                     0x106a                  _bridge_balance_frequency
                     0x106c                  _sensorAddressTable
                     0x106e                  _sensorAddressTableAllocated
                     0x10ae                  _numberOfSensors
-                    0x1444                  _sensorRBridgeTable
-                    0x14fc                  _sensorAddressCapture
-                    0x14fe                  _cosAccumulatorCapture
-                    0x1526                  _sinAccumulatorCapture
-                    0x154e                  _bridgeADCClipCapture
-                    0x154f                  _coilADCClipCapture
-                    0x1550                  _bridgeDigitalClipCapture
-                    0x1551                  _f1PlusF2OutOfRangeCapture
-                    0x1552                  _implementedBridgeGainCapture
-                    0x1598                  _global_state
-                    0x15a0                  _sensorRBridgeTableValid
+                    0x134e                  _sensorRBridgeTable
+                    0x1498                  _sensorAddressCapture
+                    0x149a                  _cosAccumulatorCapture
+                    0x14b2                  _sinAccumulatorCapture
+                    0x14ca                  _bridgeADCClipCapture
+                    0x14cb                  _coilADCClipCapture
+                    0x14cc                  _bridgeDigitalClipCapture
+                    0x14cd                  _f1PlusF2OutOfRangeCapture
+                    0x14ce                  _inverseBridgeAnalogGainCapture
+                    0x14d4                  _global_state
+                    0x14d6                  _sensorRBridgeTableValid
+                    0x155e                  __Randinit
+                    0x1560                  __Tls_setup__Randinit
+                    0x1562                  __Randseed
+                    0x1566                  __Tls_setup__Randseed
 
 External Symbols in Data Memory (by name):
 
+                    0x155e                  __Randinit
+                    0x1562                  __Randseed
+                    0x1560                  __Tls_setup__Randinit
+                    0x1566                  __Tls_setup__Randseed
                     0x105c                  _a1
                     0x105e                  _a2
-                    0x154e                  _bridgeADCClipCapture
+                    0x14ca                  _bridgeADCClipCapture
                     0x1060                  _bridgeADCGainFactor
-                    0x1550                  _bridgeDigitalClipCapture
+                    0x14cc                  _bridgeDigitalClipCapture
                     0x1068                  _bridge_balance_amplitude
                     0x106a                  _bridge_balance_frequency
-                    0x154f                  _coilADCClipCapture
-                    0x14fe                  _cosAccumulatorCapture
+                    0x14cb                  _coilADCClipCapture
+                    0x149a                  _cosAccumulatorCapture
                     0x1054                  _f1
                     0x1066                  _f1PlusF2OutOfRange
-                    0x1551                  _f1PlusF2OutOfRangeCapture
+                    0x14cd                  _f1PlusF2OutOfRangeCapture
                     0x1056                  _f2
                     0x1058                  _fdiff
                     0x105a                  _fsum
-                    0x1598                  _global_state
-                    0x1062                  _implementedBridgeGain
-                    0x1552                  _implementedBridgeGainCapture
+                    0x14d4                  _global_state
+                    0x1062                  _inverseBridgeAnalogGain
+                    0x14ce                  _inverseBridgeAnalogGainCapture
                     0x1050                  _measurementTime
                     0x10ae                  _numberOfSensors
-                    0x14fc                  _sensorAddressCapture
+                    0x1498                  _sensorAddressCapture
                     0x106c                  _sensorAddressTable
                     0x106e                  _sensorAddressTableAllocated
-                    0x1444                  _sensorRBridgeTable
-                    0x15a0                  _sensorRBridgeTableValid
-                    0x1526                  _sinAccumulatorCapture
+                    0x134e                  _sensorRBridgeTable
+                    0x14d6                  _sensorRBridgeTableValid
+                    0x14b2                  _sinAccumulatorCapture
                     0x1061                  _u24_code
 
 External Symbols in Program Memory (by address):
@@ -244,177 +258,187 @@ External Symbols in Program Memory (by address):
                   0x0002da                  __MathError
                   0x0002e0                  __DMACError
                   0x0002e6                  __DefaultInterrupt
-                  0x0002ea                  ___gesf2
-                  0x0002ea                  ___gtsf2
-                  0x0002ee                  ___lesf2
-                  0x0002ee                  ___eqsf2
-                  0x0002ee                  ___ltsf2
-                  0x0002f2                  ___divsf3
-                  0x000376                  ___mulsf3
-                  0x0003de                  ___subsf3
-                  0x0003e0                  ___addsf3
-                  0x00049a                  ___fixsfsi
-                  0x0004dc                  ___floatsisf
-                  0x0004e2                  ___fixunssfsi
-                  0x000518                  ___floatunsisf
-                  0x00051c                  ___floatdisf
-                  0x00053c                  _atan2f
-                  0x000576                  _cosf
-                  0x00057a                  _sinf
-                  0x00057e                  ___udivsi3
-                  0x00059e                  __fcompare
-                  0x0005d4                  __funpack2
-                  0x0005e4                  __fPropagateNaN
-                  0x0005f6                  __fbopExit
-                  0x0005fe                  __fbopReturnNaN
-                  0x000604                  __fpack
-                  0x000650                  __funpack
-                  0x00067a                  ___floatundisf
-                  0x0006d8                  _atanf
-                  0x0007a2                  __sincosf
-                  0x000874                  _fmodf
-                  0x000878                  __fmodrem
-                  0x000916                  __Q15ftoi
-                  0x00093a                  __itofQ15
-                  0x00094a                  __Q15abs
-                  0x000954                  _cosLUT_ZeroToPiByTwo
-                  0x008952                  _processStartCommand
-                  0x008de6                  _uart_Init
-                  0x008f44                  __U1RXInterrupt
-                  0x0090c0                  __U2RXInterrupt
-                  0x00923c                  __U1TXInterrupt
-                  0x00925c                  __U2TXInterrupt
-                  0x00927c                  _transmitResults
-                  0x009492                  _transmitError
-                  0x009f64                  _measurementFSM
-                  0x00a412                  _readBridgeSampleAndApplyGain
-                  0x00aaae                  _balanceBridgeFSM
-                  0x00b33a                  _balanceBridgeGenerator
-                  0x00b424                  _balanceBridgeMeasure
-                  0x00b49a                  _calculateFinalVectors
-                  0x00b948                  __Q15cosPILUT
-                  0x00ba4a                  __Q15sinPILUT
-                  0x00bb50                  _setRBridge
-                  0x00bb80                  _setRAmp
-                  0x00bb8e                  _getRBridgeOhms
-                  0x00bbf6                  _getRAmpOhms
-                  0x00bc20                  _getU25GainFromU24Ohms
-                  0x00bc36                  _getU25GainFromU24Code
-                  0x00bc48                  _getBridgeBufGainFromU24Code
-                  0x00bc5a                  _getU25InverseGainFromU24Ohms
-                  0x00bc70                  _getU25InverseGainFromU24Code
-                  0x00bc82                  _getU24OhmsFromU25Gain
-                  0x00bc9a                  _getU24CodeFromU25Gain
-                  0x00bd14                  _getU24CodeFromBrdigeBufGain
-                  0x00bd26                  _spiInit
-                  0x00bdae                  __SPI1Interrupt
-                  0x00be5c                  _spiTx
-                  0x00beea                  _timerInit
-                  0x00bf5e                  __T1Interrupt
-                  0x00bf82                  __T4Interrupt
-                  0x00bfa6                  _busy_wait_ms
-                  0x00c046                  _i2sInit
-                  0x00c0e2                  __DCIInterrupt
-                  0x00c116                  _muxInit
-                  0x00c140                  _configSensor
-                  0x00c1ac                  _main
-                  0x00c252                  _START_ATOMIC
-                  0x00c25c                  _END_ATOMIC
-                  0x00c266                  _NOP
-                  0x00c26e                  _cs4272Init
-                  0x00c286                  _asm16X16Mult
+                  0x0002ea                  _rand
+                  0x000390                  ___gtsf2
+                  0x000390                  ___gesf2
+                  0x000394                  ___ltsf2
+                  0x000394                  ___eqsf2
+                  0x000394                  ___lesf2
+                  0x000398                  ___divsf3
+                  0x00041c                  ___mulsf3
+                  0x000484                  ___subsf3
+                  0x000486                  ___addsf3
+                  0x000540                  ___fixsfsi
+                  0x000582                  ___floatsisf
+                  0x000588                  ___fixunssfsi
+                  0x0005be                  ___floatunsisf
+                  0x0005c2                  ___floatdisf
+                  0x0005e2                  _atan2f
+                  0x00061c                  _cosf
+                  0x000620                  _sinf
+                  0x000624                  ___udivsi3
+                  0x000644                  ___divsi3
+                  0x000662                  __fcompare
+                  0x000698                  __funpack2
+                  0x0006a8                  __fPropagateNaN
+                  0x0006ba                  __fbopExit
+                  0x0006c2                  __fbopReturnNaN
+                  0x0006c8                  __fpack
+                  0x000714                  __funpack
+                  0x00073e                  ___floatundisf
+                  0x00079c                  _atanf
+                  0x000866                  __sincosf
+                  0x000938                  _fmodf
+                  0x00093c                  __fmodrem
+                  0x0009da                  ___mulp32peds3
+                  0x0009da                  ___mulp32eds3
+                  0x0009da                  ___mulsi3
+                  0x0009e6                  __Q15ftoi
+                  0x000a0a                  __itofQ15
+                  0x000a1a                  __Q15abs
+                  0x000a24                  _cosLUT_ZeroToPiByTwo
+                  0x008a22                  _processStartCommand
+                  0x008ed6                  _uart_Init
+                  0x00902a                  __U1RXInterrupt
+                  0x0091a6                  __U2RXInterrupt
+                  0x009322                  __U1TXInterrupt
+                  0x009342                  __U2TXInterrupt
+                  0x009362                  _transmitResults
+                  0x0095d6                  _transmitError
+                  0x009ecc                  _balanceBridgeFSM
+                  0x00a78c                  _balanceBridgeGenerator
+                  0x00a876                  _balanceBridgeMeasure
+                  0x00a8ec                  _measurementFSM
+                  0x00ad02                  _readBridgeSampleAndApplyGain
+                  0x00b256                  _calculateFinalVectors
+                  0x00b81e                  __Q15cosPILUT
+                  0x00b920                  __Q15sinPILUT
+                  0x00ba26                  _setRBridge
+                  0x00ba56                  _setRAmp
+                  0x00ba64                  _getRBridgeOhms
+                  0x00bac4                  _getRAmpOhms
+                  0x00baea                  _getU25GainFromU24Ohms
+                  0x00bb00                  _getU25GainFromU24Code
+                  0x00bb12                  _getBridgeBufGainFromU24Code
+                  0x00bb24                  _getU25InverseGainFromU24Ohms
+                  0x00bb3a                  _getU25InverseGainFromU24Code
+                  0x00bb4c                  _getBridgeInverseGainFromU24Code
+                  0x00bb5e                  _getU24OhmsFromU25Gain
+                  0x00bb76                  _getU24CodeFromU25Gain
+                  0x00bbf0                  _getU24CodeFromBrdigeBufGain
+                  0x00bc02                  _spiInit
+                  0x00bc8a                  __SPI1Interrupt
+                  0x00bd38                  _spiTx
+                  0x00bdc6                  _timerInit
+                  0x00be1e                  __T1Interrupt
+                  0x00be42                  _busy_wait_ms
+                  0x00beb8                  _i2sInit
+                  0x00bf54                  __DCIInterrupt
+                  0x00bf88                  _main
+                  0x00c046                  _muxInit
+                  0x00c070                  _configSensor
+                  0x00c12e                  _START_ATOMIC
+                  0x00c138                  _END_ATOMIC
+                  0x00c142                  _NOP
+                  0x00c14a                  _asm16X16Mult
+                  0x00c156                  _cs4272Init
 
 External Symbols in Program Memory (by name):
 
-                  0x00c25c                  _END_ATOMIC
-                  0x00c266                  _NOP
-                  0x00c252                  _START_ATOMIC
+                  0x00c138                  _END_ATOMIC
+                  0x00c142                  _NOP
+                  0x00c12e                  _START_ATOMIC
                   0x0002ce                  __AddressError
-                  0x00c0e2                  __DCIInterrupt
+                  0x00bf54                  __DCIInterrupt
                   0x0002e0                  __DMACError
                   0x0002e6                  __DefaultInterrupt
                   0x0002da                  __MathError
                   0x0002c8                  __OscillatorFail
-                  0x00094a                  __Q15abs
-                  0x00b948                  __Q15cosPILUT
-                  0x000916                  __Q15ftoi
-                  0x00ba4a                  __Q15sinPILUT
-                  0x00bdae                  __SPI1Interrupt
+                  0x000a1a                  __Q15abs
+                  0x00b81e                  __Q15cosPILUT
+                  0x0009e6                  __Q15ftoi
+                  0x00b920                  __Q15sinPILUT
+                  0x00bc8a                  __SPI1Interrupt
                   0x0002d4                  __StackError
-                  0x00bf5e                  __T1Interrupt
-                  0x00bf82                  __T4Interrupt
-                  0x008f44                  __U1RXInterrupt
-                  0x00923c                  __U1TXInterrupt
-                  0x0090c0                  __U2RXInterrupt
-                  0x00925c                  __U2TXInterrupt
-                  0x0003e0                  ___addsf3
-                  0x0002f2                  ___divsf3
-                  0x0002ee                  ___eqsf2
-                  0x00049a                  ___fixsfsi
-                  0x0004e2                  ___fixunssfsi
-                  0x00051c                  ___floatdisf
-                  0x0004dc                  ___floatsisf
-                  0x00067a                  ___floatundisf
-                  0x000518                  ___floatunsisf
-                  0x0002ea                  ___gesf2
-                  0x0002ea                  ___gtsf2
-                  0x0002ee                  ___lesf2
-                  0x0002ee                  ___ltsf2
-                  0x000376                  ___mulsf3
-                  0x0003de                  ___subsf3
-                  0x00057e                  ___udivsi3
+                  0x00be1e                  __T1Interrupt
+                  0x00902a                  __U1RXInterrupt
+                  0x009322                  __U1TXInterrupt
+                  0x0091a6                  __U2RXInterrupt
+                  0x009342                  __U2TXInterrupt
+                  0x000486                  ___addsf3
+                  0x000398                  ___divsf3
+                  0x000644                  ___divsi3
+                  0x000394                  ___eqsf2
+                  0x000540                  ___fixsfsi
+                  0x000588                  ___fixunssfsi
+                  0x0005c2                  ___floatdisf
+                  0x000582                  ___floatsisf
+                  0x00073e                  ___floatundisf
+                  0x0005be                  ___floatunsisf
+                  0x000390                  ___gesf2
+                  0x000390                  ___gtsf2
+                  0x000394                  ___lesf2
+                  0x000394                  ___ltsf2
+                  0x0009da                  ___mulp32eds3
+                  0x0009da                  ___mulp32peds3
+                  0x00041c                  ___mulsf3
+                  0x0009da                  ___mulsi3
+                  0x000484                  ___subsf3
+                  0x000624                  ___udivsi3
                   0x00022e                  __data_init
                   0x00022e                  __data_init_extended
-                  0x0005e4                  __fPropagateNaN
-                  0x0005f6                  __fbopExit
-                  0x0005fe                  __fbopReturnNaN
-                  0x00059e                  __fcompare
-                  0x000878                  __fmodrem
-                  0x000604                  __fpack
-                  0x000650                  __funpack
-                  0x0005d4                  __funpack2
-                  0x00093a                  __itofQ15
+                  0x0006a8                  __fPropagateNaN
+                  0x0006ba                  __fbopExit
+                  0x0006c2                  __fbopReturnNaN
+                  0x000662                  __fcompare
+                  0x00093c                  __fmodrem
+                  0x0006c8                  __fpack
+                  0x000714                  __funpack
+                  0x000698                  __funpack2
+                  0x000a0a                  __itofQ15
                   0x000222                  __psv_init
                   0x000200                  __resetPRI
-                  0x0007a2                  __sincosf
-                  0x00c286                  _asm16X16Mult
-                  0x00053c                  _atan2f
-                  0x0006d8                  _atanf
-                  0x00aaae                  _balanceBridgeFSM
-                  0x00b33a                  _balanceBridgeGenerator
-                  0x00b424                  _balanceBridgeMeasure
-                  0x00bfa6                  _busy_wait_ms
-                  0x00b49a                  _calculateFinalVectors
-                  0x00c140                  _configSensor
-                  0x000954                  _cosLUT_ZeroToPiByTwo
-                  0x000576                  _cosf
-                  0x00c26e                  _cs4272Init
-                  0x000874                  _fmodf
-                  0x00bc48                  _getBridgeBufGainFromU24Code
-                  0x00bbf6                  _getRAmpOhms
-                  0x00bb8e                  _getRBridgeOhms
-                  0x00bd14                  _getU24CodeFromBrdigeBufGain
-                  0x00bc9a                  _getU24CodeFromU25Gain
-                  0x00bc82                  _getU24OhmsFromU25Gain
-                  0x00bc36                  _getU25GainFromU24Code
-                  0x00bc20                  _getU25GainFromU24Ohms
-                  0x00bc70                  _getU25InverseGainFromU24Code
-                  0x00bc5a                  _getU25InverseGainFromU24Ohms
-                  0x00c046                  _i2sInit
-                  0x00c1ac                  _main
-                  0x009f64                  _measurementFSM
-                  0x00c116                  _muxInit
-                  0x008952                  _processStartCommand
-                  0x00a412                  _readBridgeSampleAndApplyGain
-                  0x00bb80                  _setRAmp
-                  0x00bb50                  _setRBridge
-                  0x00057a                  _sinf
-                  0x00bd26                  _spiInit
-                  0x00be5c                  _spiTx
-                  0x00beea                  _timerInit
-                  0x009492                  _transmitError
-                  0x00927c                  _transmitResults
-                  0x008de6                  _uart_Init
+                  0x000866                  __sincosf
+                  0x00c14a                  _asm16X16Mult
+                  0x0005e2                  _atan2f
+                  0x00079c                  _atanf
+                  0x009ecc                  _balanceBridgeFSM
+                  0x00a78c                  _balanceBridgeGenerator
+                  0x00a876                  _balanceBridgeMeasure
+                  0x00be42                  _busy_wait_ms
+                  0x00b256                  _calculateFinalVectors
+                  0x00c070                  _configSensor
+                  0x000a24                  _cosLUT_ZeroToPiByTwo
+                  0x00061c                  _cosf
+                  0x00c156                  _cs4272Init
+                  0x000938                  _fmodf
+                  0x00bb12                  _getBridgeBufGainFromU24Code
+                  0x00bb4c                  _getBridgeInverseGainFromU24Code
+                  0x00bac4                  _getRAmpOhms
+                  0x00ba64                  _getRBridgeOhms
+                  0x00bbf0                  _getU24CodeFromBrdigeBufGain
+                  0x00bb76                  _getU24CodeFromU25Gain
+                  0x00bb5e                  _getU24OhmsFromU25Gain
+                  0x00bb00                  _getU25GainFromU24Code
+                  0x00baea                  _getU25GainFromU24Ohms
+                  0x00bb3a                  _getU25InverseGainFromU24Code
+                  0x00bb24                  _getU25InverseGainFromU24Ohms
+                  0x00beb8                  _i2sInit
+                  0x00bf88                  _main
+                  0x00a8ec                  _measurementFSM
+                  0x00c046                  _muxInit
+                  0x008a22                  _processStartCommand
+                  0x0002ea                  _rand
+                  0x00ad02                  _readBridgeSampleAndApplyGain
+                  0x00ba56                  _setRAmp
+                  0x00ba26                  _setRBridge
+                  0x000620                  _sinf
+                  0x00bc02                  _spiInit
+                  0x00bd38                  _spiTx
+                  0x00bdc6                  _timerInit
+                  0x0095d6                  _transmitError
+                  0x009362                  _transmitResults
+                  0x008ed6                  _uart_Init
 
 Memory Configuration
 
@@ -454,10 +478,8 @@ LOAD build/default/debug/_ext/1360937237/balanceBridge.o
 LOAD ..\a\libq-coff.a
 LOAD ..\a\libq-elf.a
                     0x0001                  __MPLAB_BUILD = 0x1
-                    0x0001                  __ICD2RAM = 0x1
                     0x0001                  __MPLAB_DEBUG = 0x1
                     0x0001                  __DEBUG = 0x1
-                    0x0001                  __MPLAB_DEBUGGER_PK3 = 0x1
 LOAD c:/program files/microchip/xc16/v1.11/bin/bin/../../lib/dsPIC33E\libp33EP512GP806-coff.a
                     0xf80004                  __FGS = 0xf80004
                     0xf80006                  __FOSCSEL = 0xf80006
@@ -482,7 +504,7 @@ LOAD c:/program files/microchip/xc16/v1.11/bin/bin/../../lib/dsPIC33E\libp33EP51
                   0x000002          0x2 SHORT 0x0 ((ABSOLUTE (__reset) >> 0x10) & 0x7f)
                   0x000003          0x2 SHORT 0x0
 
-.text             0x000200        0x754
+.text             0x000200        0x824
  *(.init)
  .init            0x000200         0x2e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-pic30-coff.a(crt0_extendedep.o)
                   0x000200                  _resetPRI
@@ -503,69 +525,77 @@ LOAD c:/program files/microchip/xc16/v1.11/bin/bin/../../lib/dsPIC33E\libp33EP51
  .isr             0x0002e6          0x4 default_isr
                   0x0002e6                  _DefaultInterrupt
  *(.libc)
+ .libc            0x0002ea         0xa6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo)
+                  0x0002ea                  rand
  *(.libm)
- .libm            0x0002ea          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fgtge.epo)
-                  0x0002ea                  __gesf2
-                  0x0002ea                  __gtsf2
- .libm            0x0002ee          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(feqltle.epo)
-                  0x0002ee                  __eqsf2
-                  0x0002ee                  __ltsf2
-                  0x0002ee                  __lesf2
- .libm            0x0002f2         0x84 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsf3.epo)
-                  0x0002f2                  __divsf3
- .libm            0x000376         0x68 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsf3.epo)
-                  0x000376                  __mulsf3
- .libm            0x0003de         0xbc c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(addsf3.epo)
-                  0x0003de                  __subsf3
-                  0x0003e0                  __addsf3
- .libm            0x00049a         0x42 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixsfsi.epo)
-                  0x00049a                  __fixsfsi
- .libm            0x0004dc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatsisf.epo)
-                  0x0004dc                  __floatsisf
- .libm            0x0004e2         0x36 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixunssfsi.epo)
-                  0x0004e2                  __fixunssfsi
- .libm            0x000518          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatunsisf.epo)
-                  0x000518                  __floatunsisf
- .libm            0x00051c         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatdisf.epo)
-                  0x00051c                  __floatdisf
- .libm            0x00053c         0x3a c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atan2f.epo)
-                  0x00053c                  atan2f
- .libm            0x000576          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(cosf.epo)
-                  0x000576                  cosf
- .libm            0x00057a          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sinf.epo)
-                  0x00057a                  sinf
- .libm            0x00057e         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(udivsi3.epo)
-                  0x00057e                  __udivsi3
- .libm            0x00059e         0x36 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
-                  0x00059e                  _fcompare
- .libm            0x0005d4         0x10 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
-                  0x0005d4                  _funpack2
- .libm            0x0005e4         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
-                  0x0005e4                  _fPropagateNaN
-                  0x0005f6                  _fbopExit
-                  0x0005fe                  _fbopReturnNaN
- .libm            0x000604         0x4c c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
-                  0x000604                  _fpack
- .libm            0x000650         0x2a c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
-                  0x000650                  _funpack
- .libm            0x00067a         0x5e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
-                  0x00067a                  __floatundisf
- .libm            0x0006d8         0xca c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
-                  0x0006d8                  atanf
- .libm            0x0007a2         0xd2 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
-                  0x0007a2                  _sincosf
- .libm            0x000874          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
-                  0x000874                  fmodf
- .libm            0x000878         0x9e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
-                  0x000878                  _fmodrem
+ .libm            0x000390          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fgtge.epo)
+                  0x000390                  __gesf2
+                  0x000390                  __gtsf2
+ .libm            0x000394          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(feqltle.epo)
+                  0x000394                  __eqsf2
+                  0x000394                  __ltsf2
+                  0x000394                  __lesf2
+ .libm            0x000398         0x84 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsf3.epo)
+                  0x000398                  __divsf3
+ .libm            0x00041c         0x68 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsf3.epo)
+                  0x00041c                  __mulsf3
+ .libm            0x000484         0xbc c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(addsf3.epo)
+                  0x000484                  __subsf3
+                  0x000486                  __addsf3
+ .libm            0x000540         0x42 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixsfsi.epo)
+                  0x000540                  __fixsfsi
+ .libm            0x000582          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatsisf.epo)
+                  0x000582                  __floatsisf
+ .libm            0x000588         0x36 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fixunssfsi.epo)
+                  0x000588                  __fixunssfsi
+ .libm            0x0005be          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatunsisf.epo)
+                  0x0005be                  __floatunsisf
+ .libm            0x0005c2         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatdisf.epo)
+                  0x0005c2                  __floatdisf
+ .libm            0x0005e2         0x3a c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atan2f.epo)
+                  0x0005e2                  atan2f
+ .libm            0x00061c          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(cosf.epo)
+                  0x00061c                  cosf
+ .libm            0x000620          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sinf.epo)
+                  0x000620                  sinf
+ .libm            0x000624         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(udivsi3.epo)
+                  0x000624                  __udivsi3
+ .libm            0x000644         0x1e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsi3.epo)
+                  0x000644                  __divsi3
+ .libm            0x000662         0x36 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
+                  0x000662                  _fcompare
+ .libm            0x000698         0x10 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
+                  0x000698                  _funpack2
+ .libm            0x0006a8         0x20 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
+                  0x0006a8                  _fPropagateNaN
+                  0x0006ba                  _fbopExit
+                  0x0006c2                  _fbopReturnNaN
+ .libm            0x0006c8         0x4c c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
+                  0x0006c8                  _fpack
+ .libm            0x000714         0x2a c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
+                  0x000714                  _funpack
+ .libm            0x00073e         0x5e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
+                  0x00073e                  __floatundisf
+ .libm            0x00079c         0xca c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
+                  0x00079c                  atanf
+ .libm            0x000866         0xd2 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
+                  0x000866                  _sincosf
+ .libm            0x000938          0x4 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
+                  0x000938                  fmodf
+ .libm            0x00093c         0x9e c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
+                  0x00093c                  _fmodrem
+ .libm            0x0009da          0xc c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsi3.epo)
+                  0x0009da                  __mulp32peds3
+                  0x0009da                  __mulsi3
+                  0x0009da                  __mulp32eds3
  *(.libdsp)
  *(.lib*)
- .libq            0x000916         0x24 ..\a\libq-coff.a(PIC_Ftoi_1_15.epo)
-                  0x000916                  _Q15ftoi
- .libq            0x00093a         0x10 ..\a\libq-coff.a(PIC_Itof_1_15.epo)
-                  0x00093a                  _itofQ15
- .libq            0x00094a          0xa ..\a\libq-coff.a(PIC_Abs_1_15.epo)
-                  0x00094a                  _Q15abs
+ .libq            0x0009e6         0x24 ..\a\libq-coff.a(PIC_Ftoi_1_15.epo)
+                  0x0009e6                  _Q15ftoi
+ .libq            0x000a0a         0x10 ..\a\libq-coff.a(PIC_Itof_1_15.epo)
+                  0x000a0a                  _itofQ15
+ .libq            0x000a1a          0xa ..\a\libq-coff.a(PIC_Abs_1_15.epo)
+                  0x000a1a                  _Q15abs
 
 usercode
  *(usercode)
@@ -648,16 +678,16 @@ __FUID0
                   0x000014          0x4 LONG 0x2e6 DEFINED (__INT0Interrupt)?ABSOLUTE (__INT0Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000016          0x4 LONG 0x2e6 DEFINED (__IC1Interrupt)?ABSOLUTE (__IC1Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000018          0x4 LONG 0x2e6 DEFINED (__OC1Interrupt)?ABSOLUTE (__OC1Interrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00001a          0x4 LONG 0xbf5e DEFINED (__T1Interrupt)?ABSOLUTE (__T1Interrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00001a          0x4 LONG 0xbe1e DEFINED (__T1Interrupt)?ABSOLUTE (__T1Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00001c          0x4 LONG 0x2e6 DEFINED (__DMA0Interrupt)?ABSOLUTE (__DMA0Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00001e          0x4 LONG 0x2e6 DEFINED (__IC2Interrupt)?ABSOLUTE (__IC2Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000020          0x4 LONG 0x2e6 DEFINED (__OC2Interrupt)?ABSOLUTE (__OC2Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000022          0x4 LONG 0x2e6 DEFINED (__T2Interrupt)?ABSOLUTE (__T2Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000024          0x4 LONG 0x2e6 DEFINED (__T3Interrupt)?ABSOLUTE (__T3Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000026          0x4 LONG 0x2e6 DEFINED (__SPI1ErrInterrupt)?ABSOLUTE (__SPI1ErrInterrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x000028          0x4 LONG 0xbdae DEFINED (__SPI1Interrupt)?ABSOLUTE (__SPI1Interrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00002a          0x4 LONG 0x8f44 DEFINED (__U1RXInterrupt)?ABSOLUTE (__U1RXInterrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00002c          0x4 LONG 0x923c DEFINED (__U1TXInterrupt)?ABSOLUTE (__U1TXInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x000028          0x4 LONG 0xbc8a DEFINED (__SPI1Interrupt)?ABSOLUTE (__SPI1Interrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00002a          0x4 LONG 0x902a DEFINED (__U1RXInterrupt)?ABSOLUTE (__U1RXInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00002c          0x4 LONG 0x9322 DEFINED (__U1TXInterrupt)?ABSOLUTE (__U1TXInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00002e          0x4 LONG 0x2e6 DEFINED (__AD1Interrupt)?ABSOLUTE (__AD1Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000030          0x4 LONG 0x2e6 DEFINED (__DMA1Interrupt)?ABSOLUTE (__DMA1Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000032          0x4 LONG 0x2e6 DEFINED (__NVMInterrupt)?ABSOLUTE (__NVMInterrupt):ABSOLUTE (__DefaultInterrupt)
@@ -672,11 +702,11 @@ __FUID0
                   0x000044          0x4 LONG 0x2e6 DEFINED (__DMA2Interrupt)?ABSOLUTE (__DMA2Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000046          0x4 LONG 0x2e6 DEFINED (__OC3Interrupt)?ABSOLUTE (__OC3Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000048          0x4 LONG 0x2e6 DEFINED (__OC4Interrupt)?ABSOLUTE (__OC4Interrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00004a          0x4 LONG 0xbf82 DEFINED (__T4Interrupt)?ABSOLUTE (__T4Interrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00004a          0x4 LONG 0x2e6 DEFINED (__T4Interrupt)?ABSOLUTE (__T4Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00004c          0x4 LONG 0x2e6 DEFINED (__T5Interrupt)?ABSOLUTE (__T5Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00004e          0x4 LONG 0x2e6 DEFINED (__INT2Interrupt)?ABSOLUTE (__INT2Interrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x000050          0x4 LONG 0x90c0 DEFINED (__U2RXInterrupt)?ABSOLUTE (__U2RXInterrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x000052          0x4 LONG 0x925c DEFINED (__U2TXInterrupt)?ABSOLUTE (__U2TXInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x000050          0x4 LONG 0x91a6 DEFINED (__U2RXInterrupt)?ABSOLUTE (__U2RXInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x000052          0x4 LONG 0x9342 DEFINED (__U2TXInterrupt)?ABSOLUTE (__U2TXInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000054          0x4 LONG 0x2e6 DEFINED (__SPI2ErrInterrupt)?ABSOLUTE (__SPI2ErrInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000056          0x4 LONG 0x2e6 DEFINED (__SPI2Interrupt)?ABSOLUTE (__SPI2Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000058          0x4 LONG 0x2e6 DEFINED (__C1RxRdyInterrupt)?ABSOLUTE (__C1RxRdyInterrupt):ABSOLUTE (__DefaultInterrupt)
@@ -705,7 +735,7 @@ __FUID0
                   0x000086          0x4 LONG 0x2e6 DEFINED (__Interrupt57)?ABSOLUTE (__Interrupt57):ABSOLUTE (__DefaultInterrupt)
                   0x000088          0x4 LONG 0x2e6 DEFINED (__Interrupt58)?ABSOLUTE (__Interrupt58):ABSOLUTE (__DefaultInterrupt)
                   0x00008a          0x4 LONG 0x2e6 DEFINED (__DCIEInterrupt)?ABSOLUTE (__DCIEInterrupt):ABSOLUTE (__DefaultInterrupt)
-                  0x00008c          0x4 LONG 0xc0e2 DEFINED (__DCIInterrupt)?ABSOLUTE (__DCIInterrupt):ABSOLUTE (__DefaultInterrupt)
+                  0x00008c          0x4 LONG 0xbf54 DEFINED (__DCIInterrupt)?ABSOLUTE (__DCIInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x00008e          0x4 LONG 0x2e6 DEFINED (__DMA5Interrupt)?ABSOLUTE (__DMA5Interrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000090          0x4 LONG 0x2e6 DEFINED (__RTCCInterrupt)?ABSOLUTE (__RTCCInterrupt):ABSOLUTE (__DefaultInterrupt)
                   0x000092          0x4 LONG 0x2e6 DEFINED (__Interrupt63)?ABSOLUTE (__Interrupt63):ABSOLUTE (__DefaultInterrupt)
@@ -2947,7 +2977,7 @@ LOAD data_init
 LOAD default_isr
 
 __c30_signature
-                  0x000000        0x108
+                  0x000000        0x11a
  __c30_signature
                   0x000000          0x6 build/default/debug/_ext/1360937237/cosLUT.o
  __c30_signature
@@ -3015,30 +3045,36 @@ __c30_signature
  __c30_signature
                   0x0000c0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(udivsi3.epo)
  __c30_signature
-                  0x0000c6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
+                  0x0000c6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(divsi3.epo)
  __c30_signature
-                  0x0000cc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
+                  0x0000cc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fcompare.epo)
  __c30_signature
-                  0x0000d2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
+                  0x0000d2          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack2.epo)
  __c30_signature
-                  0x0000d8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
+                  0x0000d8          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(futil.epo)
  __c30_signature
-                  0x0000de          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
+                  0x0000de          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fpack.epo)
  __c30_signature
-                  0x0000e4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
+                  0x0000e4          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(funpack.epo)
  __c30_signature
-                  0x0000ea          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
+                  0x0000ea          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(floatundisf.epo)
  __c30_signature
-                  0x0000f0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
+                  0x0000f0          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
  __c30_signature
-                  0x0000f6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
+                  0x0000f6          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(atanf.epo)
  __c30_signature
-                  0x0000fc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
+                  0x0000fc          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(sincosf.epo)
  __c30_signature
-                  0x000102          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
+                  0x000102          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodf.epo)
+ __c30_signature
+                  0x000108          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(fmodrem.epo)
+ __c30_signature
+                  0x00010e          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo)
+ __c30_signature
+                  0x000114          0x6 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(mulsi3.epo)
 
-.nbss               0x1050        0x548
- .nbss              0x1050        0x312 build/default/debug/_ext/1360937237/uartDrv.o
+.nbss               0x1050        0x482
+ .nbss              0x1050        0x2fe build/default/debug/_ext/1360937237/uartDrv.o
                     0x1050                  measurementTime
                     0x1054                  f1
                     0x1056                  f2
@@ -3048,104 +3084,114 @@ __c30_signature
                     0x105e                  a2
                     0x1060                  bridgeADCGainFactor
                     0x1061                  u24_code
-                    0x1062                  implementedBridgeGain
+                    0x1062                  inverseBridgeAnalogGain
                     0x1066                  f1PlusF2OutOfRange
                     0x1068                  bridge_balance_amplitude
                     0x106a                  bridge_balance_frequency
                     0x106c                  sensorAddressTable
                     0x106e                  sensorAddressTableAllocated
                     0x10ae                  numberOfSensors
- .nbss              0x1362         0xe2 build/default/debug/_ext/1360937237/generateAndProcessSamples.o
- .nbss              0x1444         0xb8 build/default/debug/_ext/1360937237/balanceBridge.o
-                    0x1444                  sensorRBridgeTable
- .nbss              0x14fc         0x5a build/default/debug/_ext/1360937237/calculateVectors.o
-                    0x14fc                  sensorAddressCapture
-                    0x14fe                  cosAccumulatorCapture
-                    0x1526                  sinAccumulatorCapture
-                    0x154e                  bridgeADCClipCapture
-                    0x154f                  coilADCClipCapture
-                    0x1550                  bridgeDigitalClipCapture
-                    0x1551                  f1PlusF2OutOfRangeCapture
-                    0x1552                  implementedBridgeGainCapture
- .nbss              0x1556         0x42 build/default/debug/_ext/1360937237/spiTx.o
+ .nbss              0x134e         0xb8 build/default/debug/_ext/1360937237/balanceBridge.o
+                    0x134e                  sensorRBridgeTable
+ .nbss              0x1406         0x50 build/default/debug/_ext/1360937237/generateAndProcessSamples.o
+ .nbss              0x1456         0x42 build/default/debug/_ext/1360937237/spiTx.o
+ .nbss              0x1498         0x3a build/default/debug/_ext/1360937237/calculateVectors.o
+                    0x1498                  sensorAddressCapture
+                    0x149a                  cosAccumulatorCapture
+                    0x14b2                  sinAccumulatorCapture
+                    0x14ca                  bridgeADCClipCapture
+                    0x14cb                  coilADCClipCapture
+                    0x14cc                  bridgeDigitalClipCapture
+                    0x14cd                  f1PlusF2OutOfRangeCapture
+                    0x14ce                  inverseBridgeAnalogGainCapture
 
-.ndata              0x1598          0xa
- .ndata             0x1598          0x6 build/default/debug/_ext/1360937237/uartDrv.o
-                    0x1598                  global_state
- .ndata             0x159e          0x2 build/default/debug/_ext/1360937237/generateAndProcessSamples.o
- .ndata             0x15a0          0x2 build/default/debug/_ext/1360937237/balanceBridge.o
-                    0x15a0                  sensorRBridgeTableValid
+.ndata              0x14d2          0x6
+ .ndata             0x14d2          0x2 build/default/debug/_ext/1360937237/generateAndProcessSamples.o
+ .ndata             0x14d4          0x2 build/default/debug/_ext/1360937237/uartDrv.o
+                    0x14d4                  global_state
+ .ndata             0x14d6          0x2 build/default/debug/_ext/1360937237/balanceBridge.o
+                    0x14d6                  sensorRBridgeTableValid
 
-.nbss               0x15a2          0x2
- .nbss              0x15a2          0x2 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
-                    0x15a2                  errno
+.nbss               0x14d8          0x2
+ .nbss              0x14d8          0x2 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\libm-coff.a(errno.epo)
+                    0x14d8                  errno
 
-.prog             0x000954       0x7ffe
- .prog            0x000954       0x7ffe build/default/debug/_ext/1360937237/cosLUT.o
-                  0x000954                  cosLUT_ZeroToPiByTwo
+.bss                0x14da         0x84
+ .bss               0x14da         0x84 c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo)
 
-.text             0x008952       0x38c0
- .text            0x008952       0x1612 build/default/debug/_ext/1360937237/uartDrv.o
-                  0x008952                  processStartCommand
-                  0x008de6                  uart_Init
-                  0x008f44                  _U1RXInterrupt
-                  0x0090c0                  _U2RXInterrupt
-                  0x00923c                  _U1TXInterrupt
-                  0x00925c                  _U2TXInterrupt
-                  0x00927c                  transmitResults
-                  0x009492                  transmitError
- .text            0x009f64        0xb4a build/default/debug/_ext/1360937237/generateAndProcessSamples.o
-                  0x009f64                  measurementFSM
-                  0x00a412                  readBridgeSampleAndApplyGain
- .text            0x00aaae        0x9ec build/default/debug/_ext/1360937237/balanceBridge.o
-                  0x00aaae                  balanceBridgeFSM
-                  0x00b33a                  balanceBridgeGenerator
-                  0x00b424                  balanceBridgeMeasure
- .text            0x00b49a        0x4ae build/default/debug/_ext/1360937237/calculateVectors.o
-                  0x00b49a                  calculateFinalVectors
- .text            0x00b948        0x208 build/default/debug/_ext/1360937237/cosLUT.o
-                  0x00b948                  _Q15cosPILUT
-                  0x00ba4a                  _Q15sinPILUT
- .text            0x00bb50        0x1d6 build/default/debug/_ext/1360937237/digiPotDrv.o
-                  0x00bb50                  setRBridge
-                  0x00bb80                  setRAmp
-                  0x00bb8e                  getRBridgeOhms
-                  0x00bbf6                  getRAmpOhms
-                  0x00bc20                  getU25GainFromU24Ohms
-                  0x00bc36                  getU25GainFromU24Code
-                  0x00bc48                  getBridgeBufGainFromU24Code
-                  0x00bc5a                  getU25InverseGainFromU24Ohms
-                  0x00bc70                  getU25InverseGainFromU24Code
-                  0x00bc82                  getU24OhmsFromU25Gain
-                  0x00bc9a                  getU24CodeFromU25Gain
-                  0x00bd14                  getU24CodeFromBrdigeBufGain
- .text            0x00bd26        0x1c4 build/default/debug/_ext/1360937237/spiTx.o
-                  0x00bd26                  spiInit
-                  0x00bdae                  _SPI1Interrupt
-                  0x00be5c                  spiTx
- .text            0x00beea        0x15c build/default/debug/_ext/1360937237/timerDrv.o
-                  0x00beea                  timerInit
-                  0x00bf5e                  _T1Interrupt
-                  0x00bf82                  _T4Interrupt
-                  0x00bfa6                  busy_wait_ms
- .text            0x00c046         0xd0 build/default/debug/_ext/1360937237/i2sDrv.o
-                  0x00c046                  i2sInit
-                  0x00c0e2                  _DCIInterrupt
- .text            0x00c116         0x96 build/default/debug/_ext/1360937237/muxControl.o
-                  0x00c116                  muxInit
-                  0x00c140                  configSensor
- .text            0x00c1ac         0x66 build/default/debug/_ext/1360937237/main.o
-                  0x00c1ac                  main
+.data               0x155e          0xa
+ .data              0x155e          0xa c:/program files/microchip/xc16/v1.11/bin/bin/../../lib\liblega-c-coff.a(rand.EPo)
+                    0x155e                  _Randinit
+                    0x1560                  _Tls_setup__Randinit
+                    0x1562                  _Randseed
+                    0x1566                  _Tls_setup__Randseed
 
-.dinit            0x00c212         0x40
- .dinit           0x00c212         0x40 data_init
+.prog             0x000a24       0x7ffe
+ .prog            0x000a24       0x7ffe build/default/debug/_ext/1360937237/cosLUT.o
+                  0x000a24                  cosLUT_ZeroToPiByTwo
 
-.text             0x00c252         0x40
- .text            0x00c252         0x1c build/default/debug/_ext/1360937237/utility.o
-                  0x00c252                  START_ATOMIC
-                  0x00c25c                  END_ATOMIC
-                  0x00c266                  NOP
- .text            0x00c26e         0x18 build/default/debug/_ext/1360937237/CS4272config.o
-                  0x00c26e                  cs4272Init
- .text            0x00c286          0xc build/default/debug/_ext/1360937237/asm.o
-                  0x00c286                  asm16X16Mult
+.text             0x008a22       0x36ba
+ .text            0x008a22       0x14aa build/default/debug/_ext/1360937237/uartDrv.o
+                  0x008a22                  processStartCommand
+                  0x008ed6                  uart_Init
+                  0x00902a                  _U1RXInterrupt
+                  0x0091a6                  _U2RXInterrupt
+                  0x009322                  _U1TXInterrupt
+                  0x009342                  _U2TXInterrupt
+                  0x009362                  transmitResults
+                  0x0095d6                  transmitError
+ .text            0x009ecc        0xa20 build/default/debug/_ext/1360937237/balanceBridge.o
+                  0x009ecc                  balanceBridgeFSM
+                  0x00a78c                  balanceBridgeGenerator
+                  0x00a876                  balanceBridgeMeasure
+ .text            0x00a8ec        0x96a build/default/debug/_ext/1360937237/generateAndProcessSamples.o
+                  0x00a8ec                  measurementFSM
+                  0x00ad02                  readBridgeSampleAndApplyGain
+ .text            0x00b256        0x5c8 build/default/debug/_ext/1360937237/calculateVectors.o
+                  0x00b256                  calculateFinalVectors
+ .text            0x00b81e        0x208 build/default/debug/_ext/1360937237/cosLUT.o
+                  0x00b81e                  _Q15cosPILUT
+                  0x00b920                  _Q15sinPILUT
+ .text            0x00ba26        0x1dc build/default/debug/_ext/1360937237/digiPotDrv.o
+                  0x00ba26                  setRBridge
+                  0x00ba56                  setRAmp
+                  0x00ba64                  getRBridgeOhms
+                  0x00bac4                  getRAmpOhms
+                  0x00baea                  getU25GainFromU24Ohms
+                  0x00bb00                  getU25GainFromU24Code
+                  0x00bb12                  getBridgeBufGainFromU24Code
+                  0x00bb24                  getU25InverseGainFromU24Ohms
+                  0x00bb3a                  getU25InverseGainFromU24Code
+                  0x00bb4c                  getBridgeInverseGainFromU24Code
+                  0x00bb5e                  getU24OhmsFromU25Gain
+                  0x00bb76                  getU24CodeFromU25Gain
+                  0x00bbf0                  getU24CodeFromBrdigeBufGain
+ .text            0x00bc02        0x1c4 build/default/debug/_ext/1360937237/spiTx.o
+                  0x00bc02                  spiInit
+                  0x00bc8a                  _SPI1Interrupt
+                  0x00bd38                  spiTx
+ .text            0x00bdc6         0xf2 build/default/debug/_ext/1360937237/timerDrv.o
+                  0x00bdc6                  timerInit
+                  0x00be1e                  _T1Interrupt
+                  0x00be42                  busy_wait_ms
+ .text            0x00beb8         0xd0 build/default/debug/_ext/1360937237/i2sDrv.o
+                  0x00beb8                  i2sInit
+                  0x00bf54                  _DCIInterrupt
+ .text            0x00bf88         0xbe build/default/debug/_ext/1360937237/main.o
+                  0x00bf88                  main
+ .text            0x00c046         0x96 build/default/debug/_ext/1360937237/muxControl.o
+                  0x00c046                  muxInit
+                  0x00c070                  configSensor
+
+.dinit            0x00c0dc         0x52
+ .dinit           0x00c0dc         0x52 data_init
+
+.text             0x00c12e         0x34
+ .text            0x00c12e         0x1c build/default/debug/_ext/1360937237/utility.o
+                  0x00c12e                  START_ATOMIC
+                  0x00c138                  END_ATOMIC
+                  0x00c142                  NOP
+ .text            0x00c14a          0xc build/default/debug/_ext/1360937237/asm.o
+                  0x00c14a                  asm16X16Mult
+ .text            0x00c156          0xc build/default/debug/_ext/1360937237/CS4272config.o
+                  0x00c156                  cs4272Init
