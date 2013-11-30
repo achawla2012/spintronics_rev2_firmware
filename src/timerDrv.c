@@ -52,7 +52,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;
     T1CONbits.TON = 0;
-    TMR1 = 0x00;
+    TMR1 = 0x0000;
     calculateFinalVectors();
 }
 
@@ -63,8 +63,8 @@ void busy_wait_ms(uint16_t ms)
 
     if (countTarget > 0)
     {
-        TMR3 = 0x00; // Clear 32-bit Timer (msw)
-        TMR2 = 0x00; // Clear 32-bit Timer (lsw)
+        TMR3 = 0x0000; // Clear 32-bit Timer (msw)
+        TMR2 = 0x0000; // Clear 32-bit Timer (lsw)
 
         T2CONbits.TON = 1;
         T3CONbits.TON = 1;
