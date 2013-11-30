@@ -104,7 +104,7 @@ void balanceBridgeFSM(void)
             gain_check_measure_time_32 = gain_check_measure_cycles * 65536 / (uint16_t)local_f1;
             if (gain_check_measure_time_32 & 0xFFFF0000 != 0) {
                 //gain_check_measure_time_32 will overflow the int16_t
-                gain_check_measure_time = local_f1;
+                gain_check_measure_time = 65536 / local_f1;
             } else {
                 gain_check_measure_time = gain_check_measure_time_32;
             }
@@ -112,7 +112,7 @@ void balanceBridgeFSM(void)
             bridge_check_measure_time_32 = gain_check_measure_time_32 * BRIDGE_CHECK_MEASURE_TIME_MULTIPLIER;
             if (bridge_check_measure_time_32 & 0xFFFF0000 != 0) {
                 //bridge_check_measure_time_32 will overflow the int16_t
-                bridge_check_measure_time = local_f1;
+                bridge_check_measure_time = gain_check_measure_time;
             } else {
                 bridge_check_measure_time = bridge_check_measure_time_32;
             }
