@@ -42,6 +42,47 @@ extern _Q15 _Q15cosPILUT(_Q15 phiOverPI);
 extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 #endif
 
+#define FILTER_TAPS 4
+
+inline int16_t fir(int16_t input)
+{
+    static int16_t delayLine[FILTER_TAPS];
+    static int16_t coef_tbl[] = {0x0001, 0x0000, 0x0000, 0x0000};
+    int16_t *dly_ptr;
+    int16_t *coef_ptr;
+    const int16_t *end = delayLine + FILTER_TAPS;
+    register int result asm("A");
+    static uint8_t cur = 0;
+
+    dly_ptr = delayLine;
+    dly_ptr += cur;
+    coef_ptr = coef_tbl;
+
+    *dly_ptr = input;
+
+    ++dly_ptr;
+
+    if (dly_ptr == end) {
+        dly_ptr = delayLine;
+    }
+
+    result = __builtin_clr_prefetch(&dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+
+    while (dly_ptr < end) {
+        result = __builtin_mac(result, *dly_ptr, *coef_ptr, &dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+    }
+    dly_ptr = delayLine;
+    while (dly_ptr <= dly_ptr + cur) {
+        result = __builtin_mac(result, *dly_ptr, *coef_ptr, &dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+    }
+    
+    ++dly_ptr;
+    if (dly_ptr == end) {
+        dly_ptr = delayLine;
+    }
+    return result;
+}
+
 void measurementFSM(void)
 {
     volatile _Q15 bridgeSample;
@@ -349,7 +390,7 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
         
     if (bridgeADCGainFactor == 0)
     {
-        return RXBUF0;
+        return fir(RXBUF0);
     }
     else
     {
@@ -362,11 +403,11 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
             *bridgeDigitalClip = true;
             if ((int16_t)RXBUF0 < 0)
             {
-                return 0x8000;//interpret the clipped sample as the most negative value
+                return fir(0x8000);//interpret the clipped sample as the most negative value
             }
             else
             {
-                return 0x7FFF;//interpret the clipped sample as the most positive value
+                return fir(0x7FFF);//interpret the clipped sample as the most positive value
             }
         }
         else
@@ -378,7 +419,7 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
             *tempSampleHighWord = RXBUF0;
             *tempSampleLowWord = *tempSampleLowWord >> (16 - bridgeADCGainFactor);
             *tempSampleHighWord = *tempSampleHighWord << bridgeADCGainFactor;
-            return *tempSampleLowWord + *tempSampleHighWord;
+            return fir(*tempSampleLowWord + *tempSampleHighWord);
         }
     }
 }
