@@ -26,7 +26,7 @@ extern inline void transmitResults(uint8_t sensor,
                                    bool bridgeADCClip, bool coilADCClip,
                                    bool bridgeDigitalClip);
 extern inline void transmitError(uint8_t errorCode);
-#ifdef NO_GUI
+#if defined(NO_GUI) || defined(SIMULATION_MODE)
 inline void processStartCommand(float GUISpecifiedA1, float GUISpecifiedF1,
                                 float GUISpecifiedA2, float GUISpecifiedF2,
                                 float GUISpecifiedT,
