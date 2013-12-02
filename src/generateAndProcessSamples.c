@@ -48,10 +48,11 @@ inline int16_t fir(int16_t input)
 {
     static int16_t delayLine[FILTER_TAPS];
     static int16_t coef_tbl[] = {0x0001, 0x0000, 0x0000, 0x0000};
-    int16_t *dly_ptr;
-    int16_t *coef_ptr;
+    register int16_t *dly_ptr asm("w9");
+    register int16_t *coef_ptr asm("w11");
     const int16_t *end = delayLine + FILTER_TAPS;
     register int result asm("A");
+    register int16_t retval asm("w13");
     static uint8_t cur = 0;
 
     dly_ptr = delayLine;
@@ -66,21 +67,36 @@ inline int16_t fir(int16_t input)
         dly_ptr = delayLine;
     }
 
-    result = __builtin_clr_prefetch(&dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+    __asm__ volatile ("CLR A, [%0]+=2, w4, [%1]+=2, w5"
+                      : /* no output */
+                      : "d"(dly_ptr), "d"(coef_ptr)
+                      : "A", "w4", "w5");
 
     while (dly_ptr < end) {
-        result = __builtin_mac(result, *dly_ptr, *coef_ptr, &dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+        __asm__ volatile ("MAC w4*w5, %0, [%1]+=2, w4, [%2]+=2, w5"
+                          : "+w"(result)
+                          : "d"(dly_ptr), "d"(coef_ptr)
+                          : "w4", "w5");
     }
     dly_ptr = delayLine;
-    while (dly_ptr <= dly_ptr + cur) {
-        result = __builtin_mac(result, *dly_ptr, *coef_ptr, &dly_ptr, dly_ptr, 2, &coef_ptr, coef_ptr, 2, NULL, 0);
+    while (dly_ptr <= delayLine + cur) {
+        __asm__ volatile ("MAC w4*w5, %0, [%1]+=2, w4, [%2]+=2, w5"
+                          : "+w"(result)
+                          : "d"(dly_ptr), "d"(coef_ptr)
+                          : "w4", "w5");
     }
-    
-    ++dly_ptr;
-    if (dly_ptr == end) {
-        dly_ptr = delayLine;
+    __asm__ volatile ("MAC w4*w5, %0" : "+w"(result));
+
+    __asm__ volatile ("MOV ACCAH, w13"
+                      : "=d"(retval)
+                      : "w"(result)
+                      : /* no clobber */);
+
+    ++cur;
+    if (cur == FILTER_TAPS) {
+        cur = 0;
     }
-    return result;
+    return retval;
 }
 
 void measurementFSM(void)
