@@ -8,7 +8,7 @@
 #include "asmFIR.h"
 #include "spintronicsIncludes.h"
 
-static const int16_t coef_tbl[FILTER_TAPS] __attribute__((space(ymemory), eds, aligned)) = {0x0001, 0x0000};
+static const int16_t coef_tbl[FILTER_TAPS] __attribute__((space(ymemory), eds, aligned)) = {0x7FFF, 0x0000};
 static int16_t delayLine[FILTER_TAPS] __attribute__((space(xmemory), eds, aligned));
 
 inline int16_t FIR(int16_t input)
