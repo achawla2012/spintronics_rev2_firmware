@@ -27,8 +27,7 @@ MAC w4*w5, A, [w9]-=2, w4, [w11]+=2, w5 ; MAC, prefetch w4/w5, postdec w9, posti
 MAC w4*w5, A, [w9], w4, [w11], w5   ; MAC, prefetch w4/w5
 MAC w4*w5, A        ; MAC
 MOV w9, [w1]        ; store delay line ptr for next call
-MOV #0x0000, w3     ; disable modulo addressing
-MOV w3, MODCON
+CLR MODCON     ; disable modulo addressing
 MOV ACCAH, w0       ; return accumulated result
 return
 .end
