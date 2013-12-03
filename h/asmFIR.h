@@ -10,10 +10,7 @@
 #ifndef ASMFIR_H
 #define	ASMFIR_H
 
-#define FILTER_TAPS 25
-#define FILTER_TAPS_LESS_3 #22
-
-
+#define FILTER_TAPS 25 // MAKE SURE TO SET DO LOOP CONSTANT IN asmFIR.s!
 
 /*
  * int16_t: the incoming sample
