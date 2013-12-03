@@ -97,7 +97,6 @@ void measurementFSM(void)
     {
         coilADCClip = true;
     }
-    bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClip);
     coilSample = RXBUF2;
 
     switch (local_state)
@@ -247,6 +246,8 @@ void measurementFSM(void)
 
         case START_SIGNAL_GEN:
 
+            /* need to start before MEASURE state because of FIR group delay */
+            bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClip);
             signalGenerator(RUN_SIGNAL_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
             ++timer;
             if (timer == MEASUREMENT_SETUP_TIME)
@@ -259,6 +260,7 @@ void measurementFSM(void)
 
         case MEASURE:
 
+            bridgeSample = readBridgeSampleAndApplyGain(&bridgeDigitalClip);
             measure(bridgeSample,
 #ifdef MEASURE_F2_AT_COIL
                     coilSample,
