@@ -23,8 +23,10 @@
 #include "commsDefines.h"
 #include "utility.h"
 #include "spintronicsStructs.h"
+#include "asmFIR.h"
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip);
+inline int16_t FIR(int16_t input);
 static void signalGenerator(unsigned char runOrReset, angle_array_t *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 local_a2, _Q15 local_f2);
 static void measure(_Q15 bridgeSample,
 #ifdef MEASURE_F2_AT_COIL
@@ -42,62 +44,7 @@ extern _Q15 _Q15cosPILUT(_Q15 phiOverPI);
 extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 #endif
 
-#define FILTER_TAPS 4
-
-inline int16_t fir(int16_t input)
-{
-    static int16_t delayLine[FILTER_TAPS];
-    static int16_t coef_tbl[] = {0x0001, 0x0000, 0x0000, 0x0000};
-    register int16_t *dly_ptr asm("w9");
-    register int16_t *coef_ptr asm("w11");
-    const int16_t *end = delayLine + FILTER_TAPS;
-    register int result asm("A");
-    register int16_t retval asm("w13");
-    static uint8_t cur = 0;
-
-    dly_ptr = delayLine;
-    dly_ptr += cur;
-    coef_ptr = coef_tbl;
-
-    *dly_ptr = input;
-
-    ++dly_ptr;
-
-    if (dly_ptr == end) {
-        dly_ptr = delayLine;
-    }
-
-    __asm__ volatile ("CLR A, [%0]+=2, w4, [%1]+=2, w5"
-                      : /* no output */
-                      : "d"(dly_ptr), "d"(coef_ptr)
-                      : "A", "w4", "w5");
-
-    while (dly_ptr < end) {
-        __asm__ volatile ("MAC w4*w5, %0, [%1]+=2, w4, [%2]+=2, w5"
-                          : "+w"(result)
-                          : "d"(dly_ptr), "d"(coef_ptr)
-                          : "w4", "w5");
-    }
-    dly_ptr = delayLine;
-    while (dly_ptr <= delayLine + cur) {
-        __asm__ volatile ("MAC w4*w5, %0, [%1]+=2, w4, [%2]+=2, w5"
-                          : "+w"(result)
-                          : "d"(dly_ptr), "d"(coef_ptr)
-                          : "w4", "w5");
-    }
-    __asm__ volatile ("MAC w4*w5, %0" : "+w"(result));
-
-    __asm__ volatile ("MOV ACCAH, w13"
-                      : "=d"(retval)
-                      : "w"(result)
-                      : /* no clobber */);
-
-    ++cur;
-    if (cur == FILTER_TAPS) {
-        cur = 0;
-    }
-    return retval;
-}
+extern inline int16_t FIR(int16_t input);
 
 void measurementFSM(void)
 {
@@ -406,7 +353,7 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
         
     if (bridgeADCGainFactor == 0)
     {
-        return fir(RXBUF0);
+        return FIR(RXBUF0);
     }
     else
     {
@@ -419,11 +366,11 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
             *bridgeDigitalClip = true;
             if ((int16_t)RXBUF0 < 0)
             {
-                return fir(0x8000);//interpret the clipped sample as the most negative value
+                return FIR(0x8000);//interpret the clipped sample as the most negative value
             }
             else
             {
-                return fir(0x7FFF);//interpret the clipped sample as the most positive value
+                return FIR(0x7FFF);//interpret the clipped sample as the most positive value
             }
         }
         else
@@ -435,7 +382,7 @@ _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip)
             *tempSampleHighWord = RXBUF0;
             *tempSampleLowWord = *tempSampleLowWord >> (16 - bridgeADCGainFactor);
             *tempSampleHighWord = *tempSampleHighWord << bridgeADCGainFactor;
-            return fir(*tempSampleLowWord + *tempSampleHighWord);
+            return FIR(*tempSampleLowWord + *tempSampleHighWord);
         }
     }
 }
