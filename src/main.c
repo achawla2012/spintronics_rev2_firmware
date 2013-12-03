@@ -40,6 +40,8 @@ _FWDT(FWDTEN_OFF);                              // Watchdog Timer Enabled/disabl
 _FPOR(FPWRT_PWR1 & ALTI2C1_ON );  		// Turn off the power-up timers.
 //_FGS(GCP_OFF);                                // Disable Code Protection
 
+extern void firInit(void);
+
 int main(void)
 {
     // Configure Oscillator to operate the device at 140Mhz
@@ -60,6 +62,7 @@ int main(void)
     RCONbits.SWDTEN=0;
 
     //initialize components; order is important; DO NOT CHANGE
+    firInit();
     timerInit();//initialize the timer
     spiInit();// init SPI for controlling digi pots
     cs4272Init();// establish communication with the CS4272

@@ -8,24 +8,17 @@
 #include "asmFIR.h"
 #include "spintronicsIncludes.h"
 
-
-//static int16_t coef_tbl[FILTER_TAPS];
+static const int16_t coef_tbl[FILTER_TAPS] __attribute__((space(ymemory), eds, aligned)) = {0x0001, 0x0000};
+static int16_t delayLine[FILTER_TAPS] __attribute__((space(xmemory), eds, aligned));
 
 inline int16_t FIR(int16_t input)
 {
-    static int16_t delayLine[FILTER_TAPS];
-    static int16_t coef_tbl[FILTER_TAPS];
-    static bool first = true;
     static int16_t *dly_ptr = delayLine;
-    int16_t *coef_ptr = coef_tbl;
+    return asmFIR(input, &dly_ptr, coef_tbl);
+}
 
-    if (first) {
-
-        XMODSRT = (uint16_t)delayLine;
-        XMODEND = (uint16_t)(delayLine + FILTER_TAPS - 1);
-        first = false;
-    }
-
-    return asmFIR(input, &dly_ptr, &coef_ptr);
-
+void firInit(void)
+{
+    XMODSRT = (uint16_t)delayLine;
+    XMODEND = (uint16_t)(delayLine + FILTER_TAPS - 1);
 }

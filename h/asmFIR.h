@@ -10,8 +10,8 @@
 #ifndef ASMFIR_H
 #define	ASMFIR_H
 
-#define FILTER_TAPS 6
-#define FILTER_TAPS_LESS_3 #3
+#define FILTER_TAPS 25
+#define FILTER_TAPS_LESS_3 #22
 
 
 
@@ -20,7 +20,7 @@
  * int16_t **: ptr to ptr to current location in the delay line
  * int16_t **: ptr to ptr to the first element int he FIR coefficient array
  */
-int16_t asmFIR(int16_t, int16_t **, int16_t **);
+int16_t asmFIR(int16_t, int16_t **, const int16_t *);
 
 #endif	/* ASMFIR_H */
 
