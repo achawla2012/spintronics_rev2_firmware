@@ -11,33 +11,33 @@
 static const int16_t coef_tbl[FILTER_TAPS] __attribute__((space(ymemory), eds, aligned)) = {0x7FFF, 0x0000};
 static int16_t delayLine[FILTER_TAPS] __attribute__((space(xmemory), eds, aligned));
 
-inline int16_t FIR(int16_t input)
+inline int16_t FIR(register int16_t input)
 {
     static int16_t *dly_ptr = delayLine;
     volatile register int16_t *reg_dly_ptr asm("w9");
     volatile register int16_t *reg_coef_ptr asm("w11");
-    volatile register uint16_t en_modulo = 0x8009;
+    register uint16_t en_modulo = 0x8009;
     volatile register int16_t result;
 
     reg_dly_ptr = dly_ptr;
-    reg_coef_ptr = (uint16_t *)coef_tbl;
+    reg_coef_ptr = (int16_t *)coef_tbl;
 
-    __asm__ volatile ("MOV %2, MODCON\n"
-                      "MOV %3, [%1]\n"
-                      "CLR A, [%1]-=2, w4, [%4]+=2, w5\n"
+    __asm__ volatile ("MOV %4, MODCON\n"
+                      "MOV %2, [%1]\n"
+                      "CLR A, [%1]-=2, w4, [%3]+=2, w5\n"
                       "DO #15, ACCUMULATE\n"
-                      "MAC w4*w5, A, [%1]-=2, w4, [%4]+=2, w5\n"
-                      "ACCUMULATE: MAC w4*w5, A, [%1]-=2, w4, [%4]+=2, w5\n"
-                      "MAC w4*w5, A, [%1]-=2, w4, [%4]+=2, w5\n"
-                      "MAC w4*w5, A, [%1], w4, [%4], w5\n"
+                      "MAC w4*w5, A, [%1]-=2, w4, [%3]+=2, w5\n"
+                      "ACCUMULATE: MAC w4*w5, A, [%1]-=2, w4, [%3]+=2, w5\n"
+                      "MAC w4*w5, A, [%1]-=2, w4, [%3]+=2, w5\n"
+                      "MAC w4*w5, A, [%1], w4, [%3], w5\n"
                       "MAC w4*w5, A\n"
                       "CLR MODCON\n"
                       "MOV ACCAH, %0"
                       : "=r"(result), "+x"(reg_dly_ptr)
-                      : "r"(en_modulo), "r"(input), "y"(reg_coef_ptr)
+                      : "r"(input), "y"(reg_coef_ptr), "r"(en_modulo)
                       : "w4", "w5");
 
-    dly_ptr = reg_dly_ptr;
+    dly_ptr = (int16_t *)reg_dly_ptr;
     return result;
 }
 
