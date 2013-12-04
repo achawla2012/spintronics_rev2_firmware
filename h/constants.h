@@ -12,11 +12,11 @@
 #define ADC_FULLSCALE_VOLTS 2.8
 
 //these values depend upon the sample rate
-#define SAMPLE_RATE 38400 //units are samples per second
-#define HALF_SAMPLE_RATE 19200.0 //SAMPLE_RATE * 0.5
-#define TWICE_SAMPLE_PERIOD 52.0833333e-6 //1.0 / HALF_SAMPLE_RATE
-#define MAX_OUTPUT_HZ 17280.0 //0.9 * HALF_SAMPLE_RATE
-#define DEFAULT_BALANCE_FREQUENCY 1707//1000Hz, _Q15ftoi(1000.0 * twice_sample_period);
+#define SAMPLE_RATE 32000 //units are samples per second
+#define HALF_SAMPLE_RATE 16000.0 //SAMPLE_RATE * 0.5
+#define TWICE_SAMPLE_PERIOD 62.5e-6 //1.0 / HALF_SAMPLE_RATE
+#define MAX_OUTPUT_HZ 14400.0 //0.9 * HALF_SAMPLE_RATE
+#define DEFAULT_BALANCE_FREQUENCY 2048//1000Hz, _Q15ftoi(1000.0 * twice_sample_period);
 
 //TODO: these values need calibration
 #define FULLSCALE_BRIDGE_DAC_VOLTAGE 2.20901803//units are volts//the Wheatstone bridge voltage that corresponds to a full-scale output//as of 5/6/2013: the DAC outputs 1.25Vpeak on two differential pins giving 2.5peak total; the DAC buffer gain is 6.04k/4.99k; 2.5 * 6.04 / 4.99 = 3.02605210
