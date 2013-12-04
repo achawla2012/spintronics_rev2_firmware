@@ -201,6 +201,6 @@ inline uint8_t getU24CodeFromU25Gain(float u25_gain)
 
 inline uint8_t getU24CodeFromBrdigeBufGain(float bridge_gain) {
 
-    return getU24CodeFromU25Gain(bridge_gain * INVERSE_U2_BUF_GAIN);
+    return getU24CodeFromU25Gain(bridge_gain * U2_INVERSE_GAIN);
 
 }
