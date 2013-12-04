@@ -10,8 +10,6 @@
  * michael.sandstedt@gmail.com
  */
 
-//TODO: add FIR HPF
-
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
