@@ -25,7 +25,7 @@
 #define START_PAYLOAD_SIZE          28
 #define STOP_PAYLOAD_SIZE           3
 #define BALANCE_PAYLOAD_SIZE        11
-#define MAX_RX_PAYLOAD_SIZE         (MAX_MUX_ADDRESS_TABLE_SIZE + 3)
+#define MAX_RX_PAYLOAD_SIZE         67 // (MAX_MUX_ADDRESS_TABLE_SIZE + 3)
 
 //message type sent to GUI
 #define CONFIRM_START_COMMAND       0x80
