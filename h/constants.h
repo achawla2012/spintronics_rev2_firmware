@@ -20,7 +20,7 @@
 
 //TODO: these values need calibration
 #define FULLSCALE_BRIDGE_DAC_VOLTAGE 2.20901803//units are volts//the Wheatstone bridge voltage that corresponds to a full-scale output//as of 5/6/2013: the DAC outputs 1.25Vpeak on two differential pins giving 2.5peak total; the DAC buffer gain is 6.04k/4.99k; 2.5 * 6.04 / 4.99 = 3.02605210
-#define FULLSCALE_COIL_DAC_VOLTAGE 2.20901803//untis are volts//the output voltage for the coil channel that corresponds to a full-scale output//as of 5/6/2013: the DAC outputs 1.25Vpeak on two differential pins giving 2.5peak total; the DAC buffer gain is 6.04k/4.99k; 2.5 * 6.04 / 4.99 = 3.02605210
+#define FULLSCALE_COIL_DAC_VOLTAGE .763//untis are volts//the output voltage measured on Nov 30th, 2013 at the coil amplifier output corresponding to a full-scale output at 50Hz//TODO: should we be measuring pre-amplifier, or should we perhaps measure current instead?
 #define U2_BUF_GAIN 1.39819005
 #define U2_INVERSE_GAIN .715210354
 #define COIL_ADC_BUFFER_GAIN 20.179
