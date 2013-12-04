@@ -781,16 +781,14 @@ static void
 usbTxWorker(void)
 {
     START_ATOMIC();//begin critical section; must be atomic!
-    while (usbTxEnd != usbTxCur)//test to see if there is still data to transmit!
+    /* continue if there is data to transmit and the U2TXREG isn't full */
+    while (usbTxEnd != usbTxCur && U1STAbits.UTXBF == 0)
     {
-        while (U1STAbits.UTXBF == 0)
+        U1TXREG = usbTxBuf[usbTxCur];
+        ++usbTxCur;
+        if (USB_TX_BUF_SIZE == usbTxCur)
         {
-            U1TXREG = usbTxBuf[usbTxCur];
-            ++usbTxCur;
-            if (USB_TX_BUF_SIZE == usbTxCur)
-            {
-                usbTxCur = 0;
-            }
+            usbTxCur = 0;
         }
     }
     if (usbTxEnd != usbTxCur) {
@@ -803,16 +801,14 @@ static void
 btTxWorker(void)
 {
     START_ATOMIC();//begin critical section; must be atomic!
-    while (btTxEnd != btTxCur)//test to see if there is still data to transmit!
+    /* continue if there is data to transmit and the U2TXREG isn't full */
+    while (btTxEnd != btTxCur && U2STAbits.UTXBF == 0)
     {
-        while (U2STAbits.UTXBF == 0)
+        U2TXREG = btTxBuf[btTxCur];
+        ++btTxCur;
+        if (BT_TX_BUF_SIZE == btTxCur)
         {
-            U2TXREG = btTxBuf[btTxCur];
-            ++btTxCur;
-            if (BT_TX_BUF_SIZE == btTxCur)
-            {
-                btTxCur = 0;
-            }
+            btTxCur = 0;
         }
     }
     if (usbTxEnd != usbTxCur) {
