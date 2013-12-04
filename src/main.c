@@ -22,6 +22,7 @@
 #include "CS4272.h"
 #include "muxControl.h"
 #include "uartDrv.h"
+#include "FIR.h"
 
 #ifdef SIMULATION_MODE
 #include "balanceBridge.h"
@@ -39,8 +40,6 @@ _FWDT(FWDTEN_OFF);                              // Watchdog Timer Enabled/disabl
 						// (LPRC can be disabled by clearing SWDTEN bit in RCON register
 _FPOR(FPWRT_PWR1 & ALTI2C1_ON );  		// Turn off the power-up timers.
 //_FGS(GCP_OFF);                                // Disable Code Protection
-
-extern void firInit(void);
 
 int main(void)
 {

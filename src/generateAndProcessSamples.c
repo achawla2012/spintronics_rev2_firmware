@@ -23,10 +23,9 @@
 #include "commsDefines.h"
 #include "utility.h"
 #include "spintronicsStructs.h"
-#include "asmFIR.h"
+#include "FIR.h"
 
 _Q15 readBridgeSampleAndApplyGain(bool* bridgeDigitalClip);
-inline int16_t FIR(int16_t input);
 static void signalGenerator(unsigned char runOrReset, angle_array_t *freqT, __eds__ _Q15 *cosOmega1T, __eds__ _Q15 *cosOmega2T, _Q15 local_a2, _Q15 local_f2);
 static void measure(_Q15 bridgeSample,
 #ifdef MEASURE_F2_AT_COIL
@@ -43,8 +42,6 @@ static void measure(_Q15 bridgeSample,
 extern _Q15 _Q15cosPILUT(_Q15 phiOverPI);
 extern _Q15 _Q15sinPILUT(_Q15 phiOverPI);
 #endif
-
-extern inline int16_t FIR(int16_t input);
 
 void measurementFSM(void)
 {
