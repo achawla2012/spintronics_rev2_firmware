@@ -29,6 +29,7 @@ bool coilADCClipCapture;
 bool bridgeDigitalClipCapture;
 bool f1PlusF2OutOfRangeCapture;
 float inverseBridgeAnalogGainCapture;
+bool waitForVectorCalculation;
 
 void calculateFinalVectors(void)
 {
@@ -271,5 +272,10 @@ void calculateFinalVectors(void)
     transmitResults(sensorAddressCapture, &phaseAngle32, &amplitude,
                     bridgeADCClipCapture, coilADCClipCapture,
                     bridgeDigitalClipCapture);
+    
+    START_ATOMIC();
+    /* the mesurementFSM can continue measurement now */
+    waitForVectorCalculation = false;
+    END_ATOMIC();
 
 }

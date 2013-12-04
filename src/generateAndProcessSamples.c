@@ -235,7 +235,7 @@ void measurementFSM(void)
         case WAIT_FOR_COIL_0RAD:
 
             signalGenerator(RESET_BRIDGE_GEN, &freqT, &cosOmega1T, &cosOmega2T, current_a2, local_f2);
-            if (0 == freqT.two_f2_t) {
+            if (0 == freqT.two_f2_t && !waitForVectorCalculation) {
                 local_state = START_SIGNAL_GEN;
             }
             break;
@@ -304,6 +304,7 @@ void measurementFSM(void)
             inverseBridgeAnalogGainCapture = local_inverseBridgeAnalogGain;
 
             //start the timer to spawn the vector calc thread
+            waitForVectorCalculation = true;
             PR1 = DELAY_TO_VECTOR_CALC_THREAD;
             T1CONbits.TON = 1;
 
