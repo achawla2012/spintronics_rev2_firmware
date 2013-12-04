@@ -452,10 +452,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
     static uint16_t numBytesInPayload = 0;
     static uint8_t USB_RxBuffer[USB_RX_BUF_SZ] ={0};
     uint8_t rxByte;
-    
+    int i = 0;
     IFS0bits.U1RXIF = 0;
 
-    if(0 == USB_5V_DETECT) {
+    if(0){// == USB_5V_DETECT) {
 
         if (1 == U1STAbits.OERR) {
             U1STAbits.OERR = 0;//this also clears U1RXREG
@@ -492,7 +492,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
         return;
     }
 
-    while (U1STAbits.URXDA) {
+    while (i == 0){//U1STAbits.URXDA) {
         rxByte = U1RXREG;
         
         switch (rxState) {
@@ -507,9 +507,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
                     rxState = RX_ESCAPE;
                 } else if (STOP_FLAG == rxByte) {
                     if (numBytesInPayload > (endDataRxPointer + 1)) {
-                        receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + USB_RX_BUF_SZ + 1, numBytesInPayload);
+                        receive(true, USB_RxBuffer, endDataRxPointer + USB_RX_BUF_SZ - numBytesInPayload, numBytesInPayload);
                     } else {
-                        receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+                        receive(true, USB_RxBuffer, endDataRxPointer - numBytesInPayload, numBytesInPayload);
                     }
                     rxState = RX_IDLE;
                 } else if (START_FLAG == rxByte) {
@@ -617,9 +617,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
                     rxState = RX_ESCAPE;
                 } else if (STOP_FLAG == rxByte) {
                     if (numBytesInPayload > (endDataRxPointer + 1)) {
-                        receive(false, BT_RxBuffer, endDataRxPointer - numBytesInPayload + BT_RX_BUF_SZ + 1, numBytesInPayload);
+                        receive(false, BT_RxBuffer, endDataRxPointer + BT_RX_BUF_SZ - numBytesInPayload, numBytesInPayload);
                     } else {
-                        receive(false, BT_RxBuffer, endDataRxPointer - numBytesInPayload + 1, numBytesInPayload);
+                        receive(false, BT_RxBuffer, endDataRxPointer - numBytesInPayload, numBytesInPayload);
                     }
                     rxState = RX_IDLE;
                 } else if (START_FLAG == rxByte) {
@@ -960,10 +960,10 @@ receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer,
     uint16_t rx_buf_sz;
     uint8_t i, payload[MAX_RX_PAYLOAD_SIZE] = {0}, xor_byte = 0;
 
-    if (rxFromUSB) {
-        rx_buf_sz == USB_RX_BUF_SZ;
+    if (true == rxFromUSB) {
+        rx_buf_sz = USB_RX_BUF_SZ;
     } else {
-        rx_buf_sz == BT_RX_BUF_SZ;
+        rx_buf_sz = BT_RX_BUF_SZ;
     }
 
     for(i = 0; i < sizeOfPayload; i++) {

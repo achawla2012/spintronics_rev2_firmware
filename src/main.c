@@ -67,7 +67,15 @@ int main(void)
     cs4272Init();// establish communication with the CS4272
     muxInit();// setup pins to communicate with the multiplexer
     uart_Init();// Init UART for GUI communication
-    
+
+    {
+        int i = 0;
+        while (i == 0) {
+            IFS0bits.U1RXIF = 1;
+            __asm__("NOP");
+        }
+    }
+
 #if defined(NO_GUI) || defined(SIMULATION_MODE)
         numberOfSensors = 5;
         sensorAddressTable[0] = 0x2F;
