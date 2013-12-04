@@ -960,10 +960,10 @@ receive (bool rxFromUSB, uint8_t *array, uint16_t rxPointer,
     uint16_t rx_buf_sz;
     uint8_t i, payload[MAX_RX_PAYLOAD_SIZE] = {0}, xor_byte = 0;
 
-    if (rxFromUSB) {
-        rx_buf_sz == USB_RX_BUF_SZ;
+    if (true == rxFromUSB) {
+        rx_buf_sz = USB_RX_BUF_SZ;
     } else {
-        rx_buf_sz == BT_RX_BUF_SZ;
+        rx_buf_sz = BT_RX_BUF_SZ;
     }
 
     for(i = 0; i < sizeOfPayload; i++) {
