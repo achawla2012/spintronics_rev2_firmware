@@ -11,8 +11,6 @@
  * michael.sandstedt@gmail.com
  */
 
-//TODO: cleanup uartDrv.c; is everything "thread-safe"?
-
 #include "p33exxxx.h"
 #include "spintronicsIncludes.h"
 #include "spintronicsConfig.h"
